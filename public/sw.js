@@ -1,6 +1,6 @@
 // Service worker: app-shell caching so the site opens instantly and works on flaky rural networks.
-const CACHE = 'vp-shell-v6';
-const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/icon.svg'];
+const CACHE = 'vp-shell-v7';
+const SHELL = ["/brand/emblem-256.png", '/', '/index.html', '/styles.css', '/app.js', '/icon.svg'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));

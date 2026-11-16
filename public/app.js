@@ -294,7 +294,7 @@ function renderShell() {
     ${route && route !== 'explore' ? `<form class="search hide-sm" id="hsearch" role="search">${ic('search')}<input name="q" placeholder="${esc(t('find_ph'))}" aria-label="${esc(t('find_ph'))}"></form>` : ''}
     <div class="lang" role="group" aria-label="Language"><button data-lang="mr" class="${LANG === 'mr' ? 'on' : ''}" aria-pressed="${LANG === 'mr'}">मराठी</button><button data-lang="en" class="${LANG === 'en' ? 'on' : ''}" aria-pressed="${LANG === 'en'}">EN</button></div>
     ${bellHtml()}
-    ${ME ? `<button class="avatar" id="av" aria-label="Account menu" aria-haspopup="menu">${esc(initials(ME.name))}</button>` : `<a class="btn ghost sm hide-sm" href="#/login">${t('login')}</a><a class="btn sm" href="#/register">${t('register')}</a>`}
+    ${ME ? `<button class="avatar" id="av" aria-label="Account menu" aria-haspopup="menu">${ME.avatar_url ? `<img src="${esc(ME.avatar_url)}" alt="" referrerpolicy="no-referrer">` : esc(initials(ME.name))}</button>` : `<a class="btn ghost sm hide-sm" href="#/login">${t('login')}</a><a class="btn sm" href="#/register">${t('register')}</a>`}
   </div><div id="menuslot"></div>`;
   const tab = (href, icon, label, active) => `<a class="${active ? 'on' : ''}" href="${href}">${ic(icon)}${label}</a>`;
   $('#tabbar').innerHTML = tab('#/', 'home', t('home'), route === '') + tab('#/explore', 'compass', t('explore'), route === 'explore') + tab('#/live', 'live', t('live'), route === 'live') + tab('#/my', 'school', t('my'), route === 'my')
@@ -305,13 +305,13 @@ function renderShell() {
   $('#av')?.addEventListener('click', (e) => {
     e.stopPropagation(); const s = $('#menuslot');
     if (s.innerHTML) { s.innerHTML = ''; return; }
-    s.innerHTML = `<div class="menu" role="menu"><div style="padding:8px 12px 6px"><b>${esc(ME.name)}</b><div class="xs muted num">${esc(ME.phone)}</div></div><hr><a href="#/my" role="menuitem">${ic('school')} ${t('my')}</a><a href="#/wishlist" role="menuitem">${ic('heart')} ${t('wishlist')}</a><a href="#/live" role="menuitem">${ic('live')} ${t('live_classes')}</a>${ME.role === 'admin' ? `<a href="#/admin" role="menuitem">${ic('grid')} ${t('admin')}</a>` : ''}<hr><button id="lo" role="menuitem">${ic('logout')} ${t('logout')}</button></div>`;
+    s.innerHTML = `<div class="menu" role="menu"><div style="padding:8px 12px 6px"><b>${esc(ME.name)}</b><div class="xs muted num">${esc(ME.phone || ME.email || '')}</div></div><hr><a href="#/my" role="menuitem">${ic('school')} ${t('my')}</a><a href="#/settings" role="menuitem">${ic('settings')} ${t('settings')}</a><a href="#/wishlist" role="menuitem">${ic('heart')} ${t('wishlist')}</a><a href="#/live" role="menuitem">${ic('live')} ${t('live_classes')}</a>${ME.role === 'admin' ? `<a href="#/admin" role="menuitem">${ic('grid')} ${t('admin')}</a>` : ''}<hr><button id="lo" role="menuitem">${ic('logout')} ${t('logout')}</button></div>`;
     $('#lo').onclick = logout;
   });
   const soc = [['social_youtube', 'YouTube'], ['social_instagram', 'Instagram'], ['social_facebook', 'Facebook'], ['social_telegram', 'Telegram']].filter(([k]) => S(k));
   const examsShown = EXAMS.filter((e) => !/-5$|-8$/.test(e.slug)).slice(0, 7);
   $('#foot').innerHTML = `<div class="wrap">
-    <div><a href="#/" class="brand">${logo()}<span>${brandMark()}</span></a><p class="muted small" style="margin:14px 0 16px;max-width:36ch">${esc(L(SITE.settings, 'footer_about') || t('foot_about'))}</p>
+    <div><img src="/brand/emblem-256.png" alt="${esc(BRAND())}" class="foot-emblem" width="96" height="96"><p class="muted small" style="margin:14px 0 16px;max-width:36ch">${esc(L(SITE.settings, 'footer_about') || t('foot_about'))}</p>
      <div class="contact">${S('contact_phone') ? `<a href="tel:${esc(S('contact_phone'))}">${ic('phone', 'sm')} <span class="num">${esc(S('contact_phone'))}</span></a>` : ''}${S('contact_email') ? `<a href="mailto:${esc(S('contact_email'))}">${ic('mail', 'sm')} ${esc(S('contact_email'))}</a>` : ''}${S('contact_address') ? `<span class="small muted">${ic('pin', 'sm')} ${esc(S('contact_address'))}</span>` : ''}</div></div>
     <div><h4>${t('exams')}</h4>${examsShown.map((e) => `<a href="#/explore?exam=${esc(e.slug)}">${esc(examName(e))}</a>`).join('')}</div>
     <div><h4>${t('board')}</h4><a href="#/explore?board=State">${t('state')}</a><a href="#/explore?board=CBSE">CBSE</a><a href="#/explore?board=ICSE">ICSE</a>${soc.length ? `<h4 style="margin-top:24px">Follow</h4>${soc.map(([k, l]) => `<a href="${esc(S(k))}" target="_blank" rel="noopener">${l}</a>`).join('')}` : ''}</div>
@@ -568,7 +568,7 @@ async function watch(id) {
       <a href="#/course/${l.course_id}" class="small" style="display:inline-flex;gap:6px;align-items:center">${ic('left', 'sm')} ${esc(d.course.title)}</a>
       <div class="player" style="margin-top:12px">${p?.type === 'iframe' ? `<iframe src="${esc(p.src)}" title="${esc(l.title)}" allow="accelerometer; gyroscope; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
         : p ? `<video src="${esc(p.src)}" controls controlsList="nodownload" playsinline></video>` : '<p style="color:#fff;padding:20px">Video unavailable</p>'}
-        <span class="wm">${esc(ME.phone)}</span></div>
+        <span class="wm">${esc(ME.phone || ME.email || ME.name)}</span></div>
       <div class="row" style="justify-content:space-between;margin-top:20px;align-items:flex-start">
         <div style="flex:1;min-width:220px"><span class="xs muted num">${t('lessons')} ${idx + 1} ${t('of')} ${d.lectures.length}</span><h2 style="font-size:clamp(22px,2.6vw,28px);margin-top:4px">${esc(l.title)}</h2></div>
         <button class="btn ${l.done ? 'soft' : ''}" id="mk">${ic('check', 'sm')} ${l.done ? t('done') : t('mark_done')}</button>
@@ -669,30 +669,6 @@ function account() {
   view(`<div class="wrap dash" style="max-width:520px"><div class="card center" style="padding:32px"><span class="avatar" style="width:72px;height:72px;font-size:26px;margin:0 auto 14px">${esc(initials(ME.name))}</span><h2 style="font-size:26px">${esc(ME.name)}</h2><p class="muted num">${esc(ME.phone)}${ME.class_level ? ' · ' + t('class') + ' ' + esc(ME.class_level) : ''}</p>
    <div class="stack" style="text-align:left;margin-top:20px"><a class="btn ghost block" href="#/my">${ic('school', 'sm')} ${t('my')}</a>${ME.role === 'admin' ? `<a class="btn ghost block" href="#/admin">${ic('grid', 'sm')} ${t('admin')}</a>` : ''}<a class="btn ghost block" href="#/page/contact">${ic('chat', 'sm')} ${t('contact')}</a><button class="btn ghost block" id="lo2" style="color:var(--bad)">${ic('logout', 'sm')} ${t('logout')}</button></div></div></div>`);
   $('#lo2').onclick = logout;
-}
-
-/* ---------------- auth ---------------- */
-function authPage(kind, params) {
-  if (ME) return go('#/my');
-  const reg = kind === 'register';
-  const nx = params.get('next') ? '?next=' + encodeURIComponent(params.get('next')) : '';
-  view(`<div class="auth"><div class="art"><span class="eyebrow">${esc(BRAND())}</span><h2 style="margin-top:14px">${t('art_h')}</h2><ul>${['auth_l1', 'auth_l2', 'auth_l3', 'auth_l4'].map((k) => `<li>${ic('check')}${t(k).replace(/^✔\s*/, '')}</li>`).join('')}</ul></div>
-   <div class="form"><div><h1 style="font-size:34px">${reg ? t('reg_title') : t('welcome_title')}</h1><p class="muted">${reg ? t('reg_sub') : t('login_sub')}</p>
-   <form id="af" novalidate>
-    ${reg ? `<label class="lbl" for="n">${t('name')}</label><input id="n" name="name" required maxlength="100" autocomplete="name">` : ''}
-    <label class="lbl" for="p">${t('mobile')}</label><div style="position:relative"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)" class="num">+91</span><input id="p" name="phone" required inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" autocomplete="tel-national" style="padding-left:50px" class="num"></div>
-    <label class="lbl" for="pw">${t('password')}</label><input id="pw" name="password" type="password" required minlength="${reg ? 8 : 1}" autocomplete="${reg ? 'new-password' : 'current-password'}" ${reg ? `placeholder="${esc(t('pw_hint'))}"` : ''}>
-    ${reg ? `<div class="row"><div class="grow"><label class="lbl">${t('class')}</label><select name="class_level">${CLASSES.map((c) => `<option value="${c}" ${c === '4' ? 'selected' : ''}>${t('class')} ${num(c)}</option>`).join('')}</select></div><div class="grow"><label class="lbl">${t('district')}</label><input name="district" maxlength="100" autocomplete="address-level2"></div></div>` : ''}
-    <p id="aerr" class="small" style="color:var(--bad);min-height:1.4em;margin:12px 0 0" aria-live="polite"></p>
-    <button class="btn block lg" style="margin-top:6px">${reg ? t('register') : t('login')}</button>
-   </form><p class="small muted center" style="margin-top:20px">${reg ? `${t('have_acc')} <a href="#/login${nx}">${t('login')}</a>` : `${t('new_here')} <a href="#/register${nx}">${t('register')}</a>`}</p></div></div></div>`);
-  $('#af').addEventListener('submit', async (e) => {
-    e.preventDefault(); const err = $('#aerr'); err.textContent = '';
-    if (!e.target.checkValidity()) { const bad = $(':invalid', e.target); err.textContent = bad.name === 'phone' ? (LANG === 'mr' ? '१० अंकी मोबाईल नंबर टाका' : 'Enter a valid 10-digit mobile number') : bad.name === 'password' && reg ? t('pw_hint') : (LANG === 'mr' ? 'सर्व माहिती भरा' : 'Please fill in all fields'); bad.focus(); return; }
-    const b = $('button', e.target); b.disabled = true;
-    try { ME = (await api('/api/auth/' + kind, { method: 'POST', body: formData(e.target) })).user; toast(`${t('hello')}, ${ME.name}`); const n = params.get('next'); go(n && n.startsWith('#/') ? n : '#/my'); }
-    catch (er) { err.textContent = er.message; b.disabled = false; }
-  });
 }
 
 /* ---------------- CMS pages ---------------- */
@@ -1185,12 +1161,12 @@ async function certificatePage(code) {
   const url = `${location.origin}/#/certificate/${c.code}`;
   view(`<div class="wrap dash"><div class="row noprint" style="justify-content:space-between;margin-bottom:16px"><a href="#/my" class="small">${ic('left', 'sm')} ${t('my')}</a><button class="btn" id="printc">${ic('download', 'sm')} ${t('print')}</button></div>
     <div class="certificate"><div class="cert-in">
-      <div class="cert-brand">${logo()}<span>${brandMark()}</span></div>
+      <div class="cert-brand"><img src="/brand/emblem-256.png" alt="${esc(BRAND())}" class="cert-emblem"></div>
       <span class="eyebrow">${t('cert_title')}</span>
       <p class="cert-l">${t('cert_body')}</p><h1 class="cert-name">${esc(c.student)}</h1><p class="cert-l">${t('cert_done')}</p>
       <h2 class="cert-course">${esc(c.course)}</h2>${c.exam ? `<p class="muted">${esc(c.exam)}</p>` : ''}
       <div class="cert-foot"><div><b>${esc(new Date(c.issued_at.replace(' ', 'T') + 'Z').toLocaleDateString(LANG === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric' }))}</b><span>Date</span></div>
-        <div class="seal">${ic('award', 'lg')}</div>
+        <div class="seal"><img src="/brand/emblem-96.png" alt=""></div>
         <div><b>${esc(c.instructor || BRAND())}</b><span>${t('instructor')}</span></div></div>
       <p class="xs muted cert-v">${t('verify')}: ${esc(url)} · ID ${esc(c.code)}</p>
     </div></div></div>`);
@@ -1213,6 +1189,142 @@ function bindBell() {
   });
 }
 
+
+/* ======================================================================
+   AUTH: Google sign-in, OTP / forgot password, complete profile, settings
+   ====================================================================== */
+Object.assign(I18N.en, {
+  with_google: 'Continue with Google', or: 'or', tab_pw: 'Password', tab_otp: 'OTP on mobile', forgot: 'Forgot password?', send_otp: 'Send OTP', otp: '6-digit OTP', verify_login: 'Verify & log in',
+  otp_sent: 'OTP sent to', resend: 'Resend OTP', reset_h: 'Reset your password', reset_p: 'We’ll send an OTP to your registered mobile number.', new_pw: 'New password', reset_btn: 'Reset password & log in',
+  consent_l: 'I am the parent/guardian, or I have my parent’s permission, and I agree to the', terms_l: 'Terms', privacy_l: 'Privacy policy', and: 'and',
+  complete_h: 'Almost done!', complete_p: 'Add your mobile number so we can send class reminders and results. Parents also use it to log in.', save_continue: 'Save & continue',
+  settings: 'Account settings', profile: 'Profile', email: 'Email', change_pw: 'Change password', cur_pw: 'Current password', save_changes: 'Save changes', signed_google: 'Signed in with Google',
+  dev_otp: 'Test mode: your OTP is',
+});
+Object.assign(I18N.mr, {
+  with_google: 'Google ने सुरू ठेवा', or: 'किंवा', tab_pw: 'पासवर्ड', tab_otp: 'मोबाईल OTP', forgot: 'पासवर्ड विसरलात?', send_otp: 'OTP पाठवा', otp: '६ अंकी OTP', verify_login: 'पडताळा व लॉगिन करा',
+  otp_sent: 'OTP पाठवला:', resend: 'पुन्हा OTP पाठवा', reset_h: 'पासवर्ड रीसेट करा', reset_p: 'नोंदणीकृत मोबाईल नंबरवर OTP पाठवू.', new_pw: 'नवीन पासवर्ड', reset_btn: 'पासवर्ड बदला व लॉगिन करा',
+  consent_l: 'मी पालक आहे / मला पालकांची परवानगी आहे आणि मला मान्य आहे –', terms_l: 'अटी', privacy_l: 'गोपनीयता धोरण', and: 'व',
+  complete_h: 'जवळजवळ पूर्ण!', complete_p: 'क्लासची आठवण व निकाल पाठवण्यासाठी तुमचा मोबाईल नंबर द्या. पालक याच नंबरने लॉगिन करू शकतात.', save_continue: 'सेव्ह करा व पुढे चला',
+  settings: 'खाते सेटिंग्ज', profile: 'प्रोफाइल', email: 'ईमेल', change_pw: 'पासवर्ड बदला', cur_pw: 'सध्याचा पासवर्ड', save_changes: 'बदल सेव्ह करा', signed_google: 'Google ने लॉगिन केले',
+  dev_otp: 'टेस्ट मोड: तुमचा OTP',
+});
+let AUTHCFG = null;
+const googleBtnSvg = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+async function mountGoogle(slot, next) {
+  if (!AUTHCFG) AUTHCFG = await api('/api/auth/config').catch(() => ({}));
+  if (!AUTHCFG.google_client_id) { slot.innerHTML = ''; return false; }
+  slot.innerHTML = `<div id="gbtn" class="gbtn-wrap"><button type="button" class="btn ghost block gfallback" disabled>${googleBtnSvg} ${t('with_google')}</button></div><div class="ordiv"><span>${t('or')}</span></div>`;
+  try {
+    await loadScript('https://accounts.google.com/gsi/client');
+    window.google.accounts.id.initialize({ client_id: AUTHCFG.google_client_id, ux_mode: 'popup', callback: async (resp) => {
+      try { const r = await api('/api/auth/google', { method: 'POST', body: { credential: resp.credential } }); ME = r.user; toast(`${t('hello')}, ${ME.name}`);
+        go(r.needs_profile ? '#/welcome' + (next ? '?next=' + encodeURIComponent(next) : '') : (next && next.startsWith('#/') ? next : '#/my')); }
+      catch (e) { toast(e.message); } } });
+    $('#gbtn').innerHTML = ''; window.google.accounts.id.renderButton($('#gbtn'), { theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with', width: Math.min(400, $('#gbtn').clientWidth || 360), locale: LANG === 'mr' ? 'mr' : 'en' });
+  } catch { /* Google script blocked/offline: keep disabled fallback */ }
+  return true;
+}
+const consentBox = () => `<label class="check consent"><input type="checkbox" name="consent" required> <span>${t('consent_l')} <a href="#/page/terms" target="_blank">${t('terms_l')}</a> ${t('and')} <a href="#/page/privacy" target="_blank">${t('privacy_l')}</a>.</span></label>`;
+
+function authArt() {
+  return `<div class="art"><img src="/brand/emblem-256.png" alt="${esc(BRAND())}" class="art-emblem"><h2 style="margin-top:18px">${t('art_h')}</h2><ul>${['auth_l1', 'auth_l2', 'auth_l3', 'auth_l4'].map((k) => `<li>${ic('check')}${t(k).replace(/^✔\s*/, '')}</li>`).join('')}</ul></div>`;
+}
+function authPage(kind, params) {
+  if (ME) return go('#/my');
+  const reg = kind === 'register'; const next = params.get('next') || '';
+  const nx = next ? '?next=' + encodeURIComponent(next) : '';
+  const mode = params.get('mode') || 'pw';
+  const phoneField = (id = 'p') => `<label class="lbl" for="${id}">${t('mobile')}</label><div class="pre91"><span class="num">+91</span><input id="${id}" name="phone" required inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" autocomplete="tel-national" class="num"></div>`;
+  view(`<div class="auth">${authArt()}
+   <div class="form"><div><h1 style="font-size:34px">${reg ? t('reg_title') : t('welcome_title')}</h1><p class="muted">${reg ? t('reg_sub') : t('login_sub')}</p>
+   <div id="gslot"></div>
+   ${reg ? `<form id="af" novalidate>
+      <label class="lbl" for="n">${t('name')}</label><input id="n" name="name" required maxlength="100" autocomplete="name">
+      ${phoneField()}
+      <label class="lbl" for="pw">${t('password')}</label><input id="pw" name="password" type="password" required minlength="8" autocomplete="new-password" placeholder="${esc(t('pw_hint'))}">
+      <div class="row"><div class="grow"><label class="lbl">${t('class')}</label><select name="class_level">${CLASSES.map((c) => `<option value="${c}" ${c === '4' ? 'selected' : ''}>${t('class')} ${num(c)}</option>`).join('')}</select></div><div class="grow"><label class="lbl">${t('district')}</label><input name="district" maxlength="100" autocomplete="address-level2"></div></div>
+      ${consentBox()}
+      <p id="aerr" class="ferr" aria-live="polite"></p><button class="btn block lg">${t('register')}</button></form>`
+    : `<div class="seg" role="tablist"><a role="tab" class="${mode === 'pw' ? 'on' : ''}" href="#/login${nx}">${t('tab_pw')}</a><a role="tab" class="${mode === 'otp' ? 'on' : ''}" href="#/login?mode=otp${next ? '&next=' + encodeURIComponent(next) : ''}">${t('tab_otp')}</a></div>
+      ${mode === 'pw' ? `<form id="af" novalidate>${phoneField()}
+        <div class="row" style="justify-content:space-between;align-items:baseline"><label class="lbl" for="pw">${t('password')}</label><a class="small" href="#/forgot">${t('forgot')}</a></div><input id="pw" name="password" type="password" required autocomplete="current-password">
+        <p id="aerr" class="ferr" aria-live="polite"></p><button class="btn block lg">${t('login')}</button></form>`
+      : otpForm(false, next)}`}
+   <p class="small muted center" style="margin-top:20px">${reg ? `${t('have_acc')} <a href="#/login${nx}">${t('login')}</a>` : `${t('new_here')} <a href="#/register${nx}">${t('register')}</a>`}</p></div></div></div>`);
+  mountGoogle($('#gslot'), next);
+  if (!reg && mode === 'otp') return bindOtp(false, next);
+  $('#af').addEventListener('submit', async (e) => {
+    e.preventDefault(); const err = $('#aerr'); err.textContent = '';
+    if (!e.target.checkValidity()) { const bad = $(':invalid', e.target); err.textContent = bad.name === 'phone' ? (LANG === 'mr' ? '१० अंकी मोबाईल नंबर टाका' : 'Enter a valid 10-digit mobile number') : bad.name === 'consent' ? (LANG === 'mr' ? 'पालकांची संमती आवश्यक आहे' : 'Parent/guardian consent is required') : bad.name === 'password' && reg ? t('pw_hint') : (LANG === 'mr' ? 'सर्व माहिती भरा' : 'Please fill in all fields'); bad.focus(); return; }
+    const b = $('button', e.target); b.disabled = true;
+    const body = formData(e.target); if (reg) body.consent = e.target.consent.checked;
+    try { ME = (await api('/api/auth/' + kind, { method: 'POST', body })).user; toast(`${t('hello')}, ${ME.name}`); go(next.startsWith('#/') ? next : '#/my'); }
+    catch (er) { err.textContent = er.message; b.disabled = false; }
+  });
+}
+function otpForm(reset) {
+  return `<form id="otpf" novalidate><div id="ostep1"><label class="lbl" for="op">${t('mobile')}</label><div class="pre91"><span class="num">+91</span><input id="op" name="phone" required inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" autocomplete="tel-national" class="num"></div>
+    <p id="oerr" class="ferr" aria-live="polite"></p><button class="btn block lg" id="osend">${t('send_otp')}</button></div>
+    <div id="ostep2" hidden><p class="small" id="osent"></p><label class="lbl" for="oc">${t('otp')}</label><input id="oc" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" class="num otpbox">
+    ${reset ? `<label class="lbl" for="onp">${t('new_pw')}</label><input id="onp" name="new_password" type="password" minlength="8" autocomplete="new-password" placeholder="${esc(t('pw_hint'))}">` : ''}
+    <p id="oerr2" class="ferr" aria-live="polite"></p><button class="btn block lg" id="overify">${reset ? t('reset_btn') : t('verify_login')}</button><button type="button" class="btn link small" id="oresend" style="margin-top:10px" disabled>${t('resend')}</button></div></form>`;
+}
+function bindOtp(reset, next) {
+  const f = $('#otpf'); let phone = '';
+  const send = async () => {
+    phone = f.phone.value.trim(); const e1 = $('#oerr'); e1.textContent = '';
+    if (!/^[6-9]\d{9}$/.test(phone)) { e1.textContent = LANG === 'mr' ? '१० अंकी मोबाईल नंबर टाका' : 'Enter a valid 10-digit mobile number'; return; }
+    try { const r = await api('/api/auth/otp/request', { method: 'POST', body: { phone } }); $('#ostep1').hidden = true; $('#ostep2').hidden = false;
+      $('#osent').innerHTML = `${t('otp_sent')} <b class="num">+91 ${esc(phone)}</b>${r.dev_code ? `<br><span class="badge accent">${t('dev_otp')} ${esc(r.dev_code)}</span>` : ''}`; $('#oc').focus();
+      const rb = $('#oresend'); rb.disabled = true; let s = 45; const iv = setInterval(() => { if (!document.body.contains(rb)) return clearInterval(iv); rb.textContent = `${t('resend')} (${s--})`; if (s < 0) { clearInterval(iv); rb.disabled = false; rb.textContent = t('resend'); } }, 1000);
+    } catch (er) { (e1.offsetParent ? e1 : $('#oerr2')).textContent = er.message; }
+  };
+  $('#osend').onclick = (e) => { e.preventDefault(); send(); };
+  $('#oresend').onclick = () => { $('#ostep1').hidden = true; send(); };
+  $('#overify').onclick = async (e) => { e.preventDefault(); const e2 = $('#oerr2'); e2.textContent = '';
+    const body = { phone, code: f.code.value.trim() }; if (reset) body.new_password = f.new_password.value;
+    if (!/^\d{6}$/.test(body.code)) { e2.textContent = t('otp'); return; }
+    try { ME = (await api('/api/auth/otp/verify', { method: 'POST', body })).user; toast(`${t('hello')}, ${ME.name}`); go(next && next.startsWith('#/') ? next : '#/my'); } catch (er) { e2.textContent = er.message; } };
+}
+function forgotPage() {
+  if (ME) return go('#/settings');
+  view(`<div class="auth">${authArt()}<div class="form"><div><h1 style="font-size:34px">${t('reset_h')}</h1><p class="muted">${t('reset_p')}</p>${otpForm(true)}<p class="small muted center" style="margin-top:20px"><a href="#/login">${ic('left', 'sm')} ${t('login')}</a></p></div></div></div>`);
+  bindOtp(true, '#/my');
+}
+function welcomePage(params) {
+  if (!ME) return go('#/login');
+  view(`<div class="wrap dash" style="max-width:520px"><div class="card" style="padding:32px">
+    <div class="row" style="flex-wrap:nowrap">${ME.avatar_url ? `<img src="${esc(ME.avatar_url)}" alt="" class="gav" referrerpolicy="no-referrer">` : `<span class="avatar">${esc(initials(ME.name))}</span>`}<div><h1 style="font-size:28px;margin:0">${t('complete_h')}</h1><p class="muted small" style="margin:2px 0 0">${t('complete_p')}</p></div></div>
+    <form id="wf" novalidate style="margin-top:10px"><label class="lbl">${t('name')}</label><input name="name" required value="${esc(ME.name)}">
+      <label class="lbl">${t('mobile')}</label><div class="pre91"><span class="num">+91</span><input name="phone" required inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" class="num" value="${esc(ME.phone || '')}"></div>
+      <div class="row"><div class="grow"><label class="lbl">${t('class')}</label><select name="class_level">${CLASSES.map((c) => `<option value="${c}" ${c === (ME.class_level || '4') ? 'selected' : ''}>${t('class')} ${num(c)}</option>`).join('')}</select></div><div class="grow"><label class="lbl">${t('district')}</label><input name="district" value="${esc(ME.district || '')}"></div></div>
+      ${ME.consent ? '' : consentBox()}<p id="werr" class="ferr" aria-live="polite"></p><button class="btn block lg">${t('save_continue')}</button></form></div></div>`);
+  $('#wf').addEventListener('submit', async (e) => { e.preventDefault(); const er = $('#werr'); er.textContent = '';
+    if (!e.target.checkValidity()) { const bad = $(':invalid', e.target); er.textContent = bad.name === 'consent' ? (LANG === 'mr' ? 'पालकांची संमती आवश्यक आहे' : 'Parent/guardian consent is required') : (LANG === 'mr' ? '१० अंकी मोबाईल नंबर टाका' : 'Enter a valid 10-digit mobile number'); return; }
+    try { ME = (await api('/api/me', { method: 'PUT', body: { ...formData(e.target), consent: ME.consent || e.target.consent?.checked === true } })).user; const n = params.get('next'); go(n && n.startsWith('#/') ? n : '#/my'); } catch (x) { er.textContent = x.message; } });
+}
+function settingsPage() {
+  if (!ME) return go('#/login?next=' + encodeURIComponent('#/settings'));
+  view(`<div class="wrap dash" style="max-width:640px"><span class="eyebrow">${t('account')}</span><h1 style="font-size:clamp(28px,4vw,38px);margin-top:10px">${t('settings')}</h1>
+    <div class="card" style="margin-top:20px"><div class="row" style="flex-wrap:nowrap;margin-bottom:6px">${ME.avatar_url ? `<img src="${esc(ME.avatar_url)}" alt="" class="gav" referrerpolicy="no-referrer">` : `<span class="avatar" style="width:52px;height:52px;font-size:18px">${esc(initials(ME.name))}</span>`}<div><b>${esc(ME.name)}</b>${ME.google ? `<div class="xs muted">${googleBtnSvg} ${t('signed_google')}</div>` : ''}</div></div>
+      <h3 style="margin-top:14px">${t('profile')}</h3><form id="pf" novalidate><div class="formgrid">
+        <div class="full"><label class="lbl">${t('name')}</label><input name="name" required value="${esc(ME.name)}"></div>
+        <div><label class="lbl">${t('mobile')}</label><div class="pre91"><span class="num">+91</span><input name="phone" required inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" class="num" value="${esc(ME.phone || '')}"></div></div>
+        <div><label class="lbl">${t('email')}</label><input name="email" type="email" value="${esc(ME.email || '')}"></div>
+        <div><label class="lbl">${t('class')}</label><select name="class_level">${CLASSES.map((c) => `<option value="${c}" ${c === ME.class_level ? 'selected' : ''}>${t('class')} ${num(c)}</option>`).join('')}</select></div>
+        <div><label class="lbl">${t('district')}</label><input name="district" value="${esc(ME.district || '')}"></div></div>
+        ${ME.consent ? '' : consentBox()}<p id="perr" class="ferr" aria-live="polite"></p><button class="btn">${t('save_changes')}</button></form></div>
+    <div class="card" style="margin-top:16px"><h3>${t('change_pw')}</h3><form id="cpf" class="stack">${ME.google ? '' : `<div><label class="lbl">${t('cur_pw')}</label><input name="current" type="password" autocomplete="current-password" required></div>`}
+      <div><label class="lbl">${t('new_pw')}</label><input name="new_password" type="password" minlength="8" autocomplete="new-password" required placeholder="${esc(t('pw_hint'))}"></div><p id="cerr" class="ferr" aria-live="polite"></p><button class="btn ghost">${t('change_pw')}</button></form></div>
+    <button class="btn ghost block" id="lo3" style="margin-top:16px;color:var(--bad)">${ic('logout', 'sm')} ${t('logout')}</button></div>`);
+  $('#pf').addEventListener('submit', async (e) => { e.preventDefault(); const er = $('#perr'); er.textContent = '';
+    try { ME = (await api('/api/me', { method: 'PUT', body: { ...formData(e.target), consent: ME.consent || e.target.consent?.checked === true } })).user; toast('✓ ' + t('save_changes')); renderShell(); } catch (x) { er.textContent = x.message; } });
+  $('#cpf').addEventListener('submit', async (e) => { e.preventDefault(); const er = $('#cerr'); er.textContent = '';
+    try { await api('/api/me/password', { method: 'PUT', body: formData(e.target) }); e.target.reset(); toast('✓ ' + t('change_pw')); } catch (x) { er.textContent = x.message; } });
+  $('#lo3').onclick = logout;
+}
+
 /* ======================================================================
    ROUTER
    ====================================================================== */
@@ -1223,6 +1335,7 @@ async function route_() {
   clearInterval(timerHandle);
   if (liveES && parts[0] !== 'live') { liveES.close(); liveES = null; }
   await loadMine();
+  if (ME && !ME.phone && !['welcome', 'settings', 'page'].includes(parts[0])) return go('#/welcome?next=' + encodeURIComponent(location.hash));
   renderShell();
   const needAuth = (fn) => (ME ? fn() : go('#/login?next=' + encodeURIComponent(location.hash)));
   try {
@@ -1233,8 +1346,11 @@ async function route_() {
       case 'watch': return needAuth(() => watch(parts[1]));
       case 'test': return needAuth(() => test(parts[1]));
       case 'my': return await my();
-      case 'account': return account();
+      case 'account': return settingsPage();
       case 'login': case 'register': return authPage(parts[0], params);
+      case 'forgot': return forgotPage();
+      case 'welcome': return welcomePage(params);
+      case 'settings': return settingsPage();
       case 'page': return page(parts[1]);
       case 'live': return parts[1] ? await liveRoom(parts[1]) : await livePage();
       case 'doubt': return await doubtPage(parts[1]);
@@ -1255,3 +1371,8 @@ window.addEventListener('hashchange', () => { route_(); window.scrollTo(0, 0); }
   if (!LANG) LANG = S('default_language') || 'mr';
   route_();
 })();
+// Replace broken profile photos (e.g. expired Google avatar URLs) with initials.
+document.addEventListener('error', (e) => {
+  const img = e.target; if (!(img instanceof HTMLImageElement) || !img.closest('.avatar, .gav, .row')) return;
+  if (img.classList.contains('gav') || img.parentElement?.classList.contains('avatar')) { const s = document.createElement('span'); s.className = 'avatar' + (img.classList.contains('gav') ? ' gav' : ''); s.textContent = initials(ME?.name || '?'); img.replaceWith(s); }
+}, true);

@@ -11,6 +11,7 @@ const multer = require('multer');
 const db = require('./db');
 const cms = require('./cms');
 const community = require('./community');
+const authExtra = require('./auth-extra');
 
 const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -31,29 +32,32 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", 'https://checkout.razorpay.com'],
-      frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://iframe.mediadelivery.net', 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
-      connectSrc: ["'self'", 'https://lumberjack.razorpay.com', 'https://api.razorpay.com'],
+      scriptSrc: ["'self'", 'https://checkout.razorpay.com', 'https://accounts.google.com/gsi/client'],
+      frameSrc: ["'self'", 'https://accounts.google.com', 'https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://iframe.mediadelivery.net', 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
+      connectSrc: ["'self'", 'https://accounts.google.com/gsi/', 'https://lumberjack.razorpay.com', 'https://api.razorpay.com'],
       imgSrc: ["'self'", 'data:', 'https:'],
       mediaSrc: ["'self'", 'https:'],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://accounts.google.com/gsi/style'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       workerSrc: ["'self'"],
       manifestSrc: ["'self'"],
     },
   },
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }, // required for the Google sign-in popup
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
 // ---------- helpers ----------
 const COOKIE = 'vp_session';
-const cookieOpts = { httpOnly: true, sameSite: 'lax', secure: IS_PROD, maxAge: 7 * 24 * 3600 * 1000, path: '/' };
+const cookieOpts = { httpOnly: true, sameSite: 'lax', secure: IS_PROD, maxAge: 30 * 24 * 3600 * 1000, path: '/' };
 const int = (v) => { const n = Number.parseInt(v, 10); return Number.isFinite(n) ? n : null; };
 const str = (v, max = 5000) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const bool = (v) => (v === true || v === 1 || v === '1' || v === 'true' ? 1 : 0);
 const err = (res, code, msg) => res.status(code).json({ error: msg });
-const publicUser = (u) => u && ({ id: u.id, name: u.name, phone: u.phone, email: u.email, role: u.role, district: u.district, class_level: u.class_level });
+const publicUser = (u) => u && ({ id: u.id, name: u.name, phone: /^[6-9]\d{9}$/.test(u.phone) ? u.phone : '', email: u.email, role: u.role, district: u.district, class_level: u.class_level, avatar_url: u.avatar_url, google: !!u.google_sub, consent: !!u.consent_at });
+const setSession = (res, uid) => res.cookie(COOKIE, jwt.sign({ uid }, JWT_SECRET, { expiresIn: '30d' }), cookieOpts);
 
 // CSRF defence: mutating API requests must be JSON or multipart (not simple form posts) and same-origin.
 app.use('/api', (req, res, next) => {
@@ -125,10 +129,11 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
   const name = str(req.body.name, 100), phone = str(req.body.phone, 10), password = str(req.body.password, 200);
   if (!name || !PHONE_RE.test(phone)) return err(res, 400, 'Enter your name and a valid 10-digit mobile number');
   if (password.length < 8) return err(res, 400, 'Password must be at least 8 characters');
+  if (req.body.consent !== true) return err(res, 400, 'Parent/guardian consent is required');
   if (db.prepare('SELECT 1 FROM users WHERE phone=?').get(phone)) return err(res, 409, 'This mobile number is already registered');
-  const r = db.prepare('INSERT INTO users (name,phone,email,password_hash,district,class_level) VALUES (?,?,?,?,?,?)')
+  const r = db.prepare("INSERT INTO users (name,phone,email,password_hash,district,class_level,consent_at) VALUES (?,?,?,?,?,?,datetime('now'))")
     .run(name, phone, str(req.body.email, 200) || null, bcrypt.hashSync(password, 10), str(req.body.district, 100) || null, str(req.body.class_level, 20) || null);
-  res.cookie(COOKIE, jwt.sign({ uid: Number(r.lastInsertRowid) }, JWT_SECRET, { expiresIn: '7d' }), cookieOpts);
+  setSession(res, Number(r.lastInsertRowid));
   res.json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(r.lastInsertRowid)) });
 });
 
@@ -136,11 +141,13 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
   const u = db.prepare('SELECT * FROM users WHERE phone=?').get(str(req.body.phone, 10));
   if (!u || !bcrypt.compareSync(str(req.body.password, 200), u.password_hash)) return err(res, 401, 'Wrong mobile number or password');
   if (u.blocked) return err(res, 403, 'Your account has been blocked. Contact support.');
-  res.cookie(COOKIE, jwt.sign({ uid: u.id }, JWT_SECRET, { expiresIn: '7d' }), cookieOpts);
+  setSession(res, u.id);
   res.json({ user: publicUser(u) });
 });
 app.post('/api/auth/logout', (req, res) => { res.clearCookie(COOKIE, { path: '/' }); res.json({ ok: true }); });
 app.get('/api/me', (req, res) => res.json({ user: publicUser(req.user) || null, paymentMode: PAYMENT_MODE, razorpayKey: PAYMENT_MODE === 'razorpay' ? RZP_KEY : null }));
+
+authExtra.mount(app, { err, setSession, publicUser, auth });
 
 // ---------- public catalogue ----------
 app.get('/api/exams', (req, res) => res.json(db.prepare(`SELECT e.*, (SELECT COUNT(*) FROM courses c WHERE c.exam_id=e.id AND c.published=1) courses

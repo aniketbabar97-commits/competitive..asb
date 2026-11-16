@@ -11,6 +11,22 @@ See [`docs/RESEARCH.md`](docs/RESEARCH.md) for market research, product strategy
 
 **Security:** bcrypt passwords, httpOnly JWT session cookie, rate-limited login, Helmet CSP, CSRF protection (same-origin + JSON-only mutations), parameterised SQL, server-side access checks on every paid resource, PDFs kept outside the public folder and served only to enrolled users, PDF magic-byte check on upload, and Razorpay signature verification.
 
+## Login options
+- **Mobile + password**, **mobile + OTP**, **forgot password via OTP**, and **Continue with Google (Gmail)**.
+- Parent/guardian consent is recorded at sign-up (required by the DPDP Act because users are children).
+- Google users are asked once for a mobile number; the account then also works with mobile login.
+
+### Enable Google sign-in (free, about 10 minutes)
+1. Go to <https://console.cloud.google.com/> → create a project, e.g. "SchoolPariksha".
+2. **APIs & Services → OAuth consent screen** → External → app name, support email, logo (use `public/brand/emblem.png`) → publish.
+3. **Credentials → Create credentials → OAuth client ID → Web application**.
+   - Authorised JavaScript origins: `https://yourdomain.com` (and `http://localhost:3000` for testing).
+4. Copy the **Client ID** and start the server with `GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com`.
+No client secret is needed: the server verifies Google's signed ID token against Google's public keys.
+
+### Enable SMS OTP (MSG91)
+Set `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID` (a DLT-approved template containing `##OTP##`). Without them, development mode shows the OTP on screen and in the server log; production refuses to send.
+
 ## Learning community (Udemy-style)
 - **Live classes:** schedule in Admin → Live classes. Stream on YouTube Live (embedded) and/or give a Zoom/Meet link. The site shows "Live now" banners, countdowns, attendance and recordings. Access is limited to enrolled students unless the class is marked free.
 - **Live chat:** real-time chat beside the stream (Server-Sent Events, no extra service), online count, staff badge, admins can delete messages, 1 message per 3 seconds per student.
@@ -48,6 +64,8 @@ Without Razorpay keys, payments run in **mock mode** (a confirm dialog simulates
 | `JWT_SECRET` | Long random string |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Enables live payments |
 | `ADMIN_PHONE`, `ADMIN_PASSWORD` | First admin account |
+| `GOOGLE_CLIENT_ID` | Enables "Continue with Google" |
+| `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_ID` | SMS OTP for login and password reset |
 | `BUNNY_STREAM_TOKEN_KEY` | Bunny Stream token-auth key: lecture links are signed and expire after 3 hours |
 | `PORT`, `DATA_DIR`, `UPLOAD_DIR` | Server port, database folder, PDF storage |
 
