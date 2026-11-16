@@ -226,6 +226,57 @@ Object.assign(I18N.mr, {
   continue_where: 'जिथे थांबलात तिथून सुरू करा', overview: 'आढावा', all_courses: 'सर्व कोर्सेस',
 });
 
+Object.assign(I18N.en, {
+  cd_eyebrow: 'The clock is ticking', cd_h: 'Every day counts. Start today.', days_left: 'days to go', cd_today: 'Exam day!', cd_tent: 'Tentative date, confirm on the official website',
+  cd_cta: 'Start preparing',
+  dream_eyebrow: 'Dream big', dream_h: 'One exam can change your child’s whole future',
+  dream_p: 'These are not just tests. They open doors that change a family’s life, and children from every village and town get through each year.',
+  d1: 'Navodaya Vidyalaya', d1v: 'Class 6–12', d1d: 'Residential schooling with food, uniform and books, and almost no fees. One seat in every district goes to the best-prepared child.',
+  d2: 'Maharashtra Scholarship', d2v: '₹5,000–7,500/yr', d2d: 'A state merit scholarship for Classes 4 and 7, and a merit-list name your child will be proud of.',
+  d3: 'NMMS Scholarship', d3v: '₹12,000/yr', d3d: 'Paid every year from Class 9 to 12: ₹48,000 for a child who prepares well in Class 8.',
+  quote_eyebrow: 'Thought for today',
+  r_top: 'Outstanding! You are exam-ready.', r_good: 'Great work! You are on the right track.', r_mid: 'Good effort. A little more practice and you’ll be at the top.', r_low: 'Every topper started here. Review the solutions and try again. You will improve.',
+  better_than: 'You scored better than', of_students: 'of students who took this test', first_taker: 'You are among the first to take this test. Set the benchmark!',
+  cheers: ['Well done! One step closer.', 'Excellent! Keep the momentum going.', 'Great! Toppers are made one lesson at a time.', 'Superb! Your future self will thank you.'],
+  streak: 'day streak', streak_0: 'Study today to start a streak', streak_keep: 'Keep it alive: study something today', streak_done: 'Today’s study done. See you tomorrow!',
+  gm: 'Good morning', ga: 'Good afternoon', ge: 'Good evening',
+});
+Object.assign(I18N.mr, {
+  cd_eyebrow: 'वेळ वेगाने जात आहे', cd_h: 'प्रत्येक दिवस महत्त्वाचा. आजपासूनच सुरुवात करा.', days_left: 'दिवस बाकी', cd_today: 'आज परीक्षा!', cd_tent: 'तात्पुरती तारीख – अधिकृत वेबसाइटवर खात्री करा',
+  cd_cta: 'तयारी सुरू करा',
+  dream_eyebrow: 'मोठी स्वप्नं पाहा', dream_h: 'एक परीक्षा तुमच्या मुलाचं संपूर्ण भविष्य बदलू शकते',
+  dream_p: 'या फक्त परीक्षा नाहीत – कुटुंबाचं आयुष्य बदलणारे दरवाजे आहेत. आणि दरवर्षी प्रत्येक गावातून, शहरातून मुलं यशस्वी होतात.',
+  d1: 'जवाहर नवोदय विद्यालय', d1v: 'इ. ६ ते १२', d1d: 'राहणे, जेवण, गणवेश, पुस्तकांसह निवासी शिक्षण – जवळजवळ मोफत. प्रत्येक जिल्ह्यातील सर्वोत्तम तयारी असलेल्या मुलांना संधी.',
+  d2: 'महाराष्ट्र शिष्यवृत्ती', d2v: '₹५,०००–७,५००/वर्ष', d2d: 'इ. ४ थी व ७ वी साठी राज्य गुणवत्ता शिष्यवृत्ती – आणि गुणवत्ता यादीत मुलाचं नाव, अभिमानाची गोष्ट.',
+  d3: 'NMMS शिष्यवृत्ती', d3v: '₹१२,०००/वर्ष', d3d: 'इ. ९ ते १२ पर्यंत दरवर्षी – इ. ८ वीत चांगली तयारी केल्यास एकूण ₹४८,०००.',
+  quote_eyebrow: 'आजचा विचार',
+  r_top: 'अप्रतिम! तुम्ही परीक्षेसाठी तयार आहात.', r_good: 'छान! तुम्ही योग्य मार्गावर आहात.', r_mid: 'चांगला प्रयत्न! थोडा अधिक सराव आणि तुम्ही टॉपवर असाल.', r_low: 'प्रत्येक टॉपरची सुरुवात इथूनच झाली. उत्तरे पाहा आणि पुन्हा प्रयत्न करा – नक्की सुधाराल.',
+  better_than: 'तुम्ही', of_students: 'विद्यार्थ्यांपेक्षा जास्त गुण मिळवले', first_taker: 'ही चाचणी देणाऱ्या पहिल्या विद्यार्थ्यांपैकी तुम्ही एक आहात – बेंचमार्क तुम्हीच ठरवा!',
+  cheers: ['शाब्बास! ध्येयाच्या एक पाऊल जवळ.', 'उत्तम! असाच वेग ठेवा.', 'छान! टॉपर्स एक-एक धडा करूनच घडतात.', 'खूप छान! भविष्यातले तुम्ही आज तुमचे आभार मानतील.'],
+  streak: 'दिवसांची सलग अभ्यास मालिका', streak_0: 'आज अभ्यास करून मालिका सुरू करा', streak_keep: 'मालिका तुटू देऊ नका – आज थोडा अभ्यास करा', streak_done: 'आजचा अभ्यास पूर्ण. उद्या भेटू!',
+  gm: 'सुप्रभात', ga: 'नमस्कार', ge: 'शुभ संध्याकाळ',
+});
+const tA = (k) => I18N[LANG][k] || I18N.en[k];
+const daysTo = (d) => Math.ceil((new Date(d + 'T00:00:00') - new Date(new Date().toDateString())) / 864e5);
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box = document.createElement('div'); box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  const cols = ['#f2a007', '#1d3c78', '#15803d', '#b42318', '#0e5a73'];
+  box.innerHTML = Array.from({ length: 90 }, () => `<i style="left:${Math.random() * 100}%;background:${cols[Math.floor(Math.random() * cols.length)]};animation-delay:${Math.random() * .6}s;animation-duration:${2 + Math.random() * 1.6}s;transform:rotate(${Math.random() * 360}deg)"></i>`).join('');
+  document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
+}
+function quoteBand(qs, id = 'qband') {
+  if (!qs.length) return '';
+  const start = Math.floor(Date.now() / 864e5) % qs.length; // quote of the day
+  const q = qs[start];
+  return `<section class="qband" id="${id}" data-i="${start}"><div class="wrap"><span class="eyebrow">${t('quote_eyebrow')}</span><blockquote><p>${esc(L(q, 'text'))}</p><footer>— ${esc(L(q, 'author'))}</footer></blockquote>${qs.length > 1 ? `<div class="qnav"><button class="iconbtn" data-q="-1" aria-label="Previous quote">${ic('left')}</button><button class="iconbtn" data-q="1" aria-label="Next quote">${ic('right')}</button></div>` : ''}</div></section>`;
+}
+function bindQuotes(qs, id = 'qband') {
+  const el = $('#' + id); if (!el || qs.length < 2) return;
+  const show = (i) => { i = (i + qs.length) % qs.length; el.dataset.i = i; const bq = $('blockquote', el); bq.classList.remove('in'); void bq.offsetWidth; bq.classList.add('in'); $('p', bq).textContent = L(qs[i], 'text'); $('footer', bq).textContent = '— ' + L(qs[i], 'author'); };
+  $$('[data-q]', el).forEach((b) => (b.onclick = () => show(Number(el.dataset.i) + Number(b.dataset.q))));
+  const iv = setInterval(() => (document.body.contains(el) ? show(Number(el.dataset.i) + 1) : clearInterval(iv)), 9000);
+}
 const pct = (p, m) => (m > p ? Math.round((1 - p / m) * 100) : 0);
 const initials = (n) => (n || '?').split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase();
 const grad = (id) => coverColor(null, id); // used by banners without images
@@ -329,6 +380,8 @@ async function home() {
   ${S('show_stats') === '1' && st.lectures >= 20 ? `<div class="stats"><div class="wrap statsgrid">${[[st.courses, 'st_courses'], [st.lectures, 'st_lectures'], [st.questions, 'st_questions'], [st.exams, 'st_exams']].map(([n, k]) => `<div><b data-count="${n}">${num(n)}</b><span>${t(k)}</span></div>`).join('')}</div></div>` : ''}
   <div class="wrap">
     <div id="installslot"></div>
+    ${(() => { const up = EXAMS.filter((e) => e.exam_date && daysTo(e.exam_date) >= 0).sort((a, b) => a.exam_date.localeCompare(b.exam_date)).slice(0, 3);
+      return S('show_countdown') === '1' && up.length ? `<section class="countdown"><div><span class="eyebrow">${t('cd_eyebrow')}</span><h2>${t('cd_h')}</h2></div><div class="cds">${up.map((e) => { const n = daysTo(e.exam_date); return `<a class="cd" href="#/explore?exam=${esc(e.slug)}"><b class="num">${n === 0 ? '🎯' : num(n)}</b><span class="lbl2">${n === 0 ? t('cd_today') : t('days_left')}</span><span class="nm">${esc(examName(e))}</span><span class="dt num" title="${esc(t('cd_tent'))}">${esc(new Date(e.exam_date).toLocaleDateString(LANG === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }))}*</span></a>`; }).join('')}</div><p class="xs muted" style="margin:10px 0 0">* ${t('cd_tent')}</p></section>` : ''; })()}
     ${SITE.banners.length ? `<section class="banners" aria-label="Offers"><div class="btrack" id="btrack">${SITE.banners.map((b) => `<a class="banner" ${b.link ? `href="${esc(b.link)}"` : ''} style="${b.image_url ? `background-image:linear-gradient(90deg,rgba(15,20,32,.7),rgba(15,20,32,.05)),url('${esc(b.image_url)}')` : `background:${coverColor(b.id)}`}"><div><b>${esc(L(b, 'title'))}</b>${L(b, 'subtitle') ? `<span>${esc(L(b, 'subtitle'))}</span>` : ''}</div></a>`).join('')}</div>${SITE.banners.length > 1 ? `<div class="bdots">${SITE.banners.map((_, i) => `<button aria-label="Slide ${i + 1}" data-b="${i}"></button>`).join('')}</div>` : ''}</section>` : ''}
     ${ann.length ? `<div class="notice">${ic('mega')}<div><b>${esc(ann[0].title)}</b> ${esc(ann[0].body)}</div></div>` : ''}
 
@@ -338,7 +391,10 @@ async function home() {
       <div class="examlist" id="examlist"></div>
     </section>
 
-    <section style="padding-bottom:16px">
+    ${S('show_dreams') === '1' ? `<section class="dreams"><div class="sechead"><div><span class="eyebrow">${t('dream_eyebrow')}</span><h2>${t('dream_h')}</h2><p>${t('dream_p')}</p></div></div>
+      <div class="dgrid">${[1, 2, 3].map((i) => `<div class="dream"><span class="dv">${t('d' + i + 'v')}</span><h3>${t('d' + i)}</h3><p>${t('d' + i + 'd')}</p></div>`).join('')}</div></section>` : ''}
+
+    <section style="padding:56px 0 16px">
       <div class="sechead"><div><span class="eyebrow">${t('board_eyebrow')}</span><h2>${t('board_h')}</h2></div></div>
       <div class="picker"><h4>${t('board_l')}</h4><div class="chips">${BOARDS.slice(1).map(([v, k]) => `<a class="chip" href="#/explore?board=${v}">${t(k)}</a>`).join('')}</div>
         <h4>${t('class_l')}</h4><div class="chips">${CLASSES.map((c) => `<a class="chip num" href="#/explore?class=${c}">${num(c)}</a>`).join('')}</div></div>
@@ -354,6 +410,9 @@ async function home() {
       <div class="method">${[1, 2, 3].map((i) => `<div><span class="n">0${i}</span><h3>${t('m' + i)}</h3><p>${t('m' + i + 'd')}</p></div>`).join('')}</div>
     </section>` : ''}
 
+  </div>
+  ${S('show_quotes') === '1' ? quoteBand(SITE.quotes || []) : ''}
+  <div class="wrap">
     ${S('show_testimonials') === '1' && SITE.testimonials.length ? `<section class="section" style="padding-top:24px"><div class="sechead"><div><span class="eyebrow">${t('testi_eyebrow')}</span><h2>${t('testi_h')}</h2></div></div>
       <div class="scroll-x"><div class="tgrid">${SITE.testimonials.map((x) => `<figure class="card testi"><div class="stars" aria-label="${x.rating} / 5">${'★'.repeat(Math.max(0, Math.min(5, x.rating || 5)))}</div><blockquote>${esc(x.text)}</blockquote><figcaption>${x.photo_url ? `<img src="${esc(x.photo_url)}" alt="">` : `<span class="avatar" style="width:40px;height:40px">${esc(initials(x.name))}</span>`}<span><b>${esc(x.name)}</b><span class="xs muted">${esc(x.meta)}</span></span></figcaption></figure>`).join('')}</div></div></section>` : ''}
 
@@ -370,7 +429,7 @@ async function home() {
       <div>${SITE.faqs.map((f) => `<details class="faq"><summary>${esc(L(f, 'q'))}</summary><p>${esc(L(f, 'a'))}</p></details>`).join('')}</div>
     </div></section>` : ''}
   </div>`);
-  renderInstall();
+  renderInstall(); bindQuotes(SITE.quotes || []);
   const drawExams = (cat) => {
     $('#examlist').innerHTML = EXAMS.filter((e) => e.category === cat && !/-5$|-8$/.test(e.slug)).map((e) => `<a class="exam" href="#/explore?exam=${esc(e.slug)}"><span class="ico" style="background:${coverColor(e.position, e.id)}">${ic(EXAM_ICON(e.slug, e.category))}</span><span class="txt"><b>${esc(examName(e))}</b><span class="d">${esc(e.description || '')}</span></span><span class="go">${ic('arrow')}</span></a>`).join('');
   };
@@ -517,7 +576,8 @@ async function watch(id) {
     </div></aside></div></div>`);
   $('#mk').onclick = async () => {
     await api(`/api/lectures/${id}/complete`, { method: 'POST', body: { done: !l.done } });
-    if (!l.done && l.next) { toast(t('done')); go('#/watch/' + l.next.id); } else route_();
+    const ch = tA('cheers'); if (!l.done) toast(ch[Math.floor(Math.random() * ch.length)]);
+    if (!l.done && l.next) go('#/watch/' + l.next.id); else route_();
   };
 }
 
@@ -554,16 +614,19 @@ async function test(id) {
     const r = await api(`/api/tests/${id}/submit`, { method: 'POST', body: { answers: ans } });
     const p = r.total ? Math.round((r.score / r.total) * 100) : 0;
     const attempted = Object.keys(ans).length;
+    const msg = p >= 85 ? t('r_top') : p >= 60 ? t('r_good') : p >= 35 ? t('r_mid') : t('r_low');
+    const cmp = r.better_than === null ? t('first_taker') : LANG === 'mr' ? `${t('better_than')} <b>${num(r.better_than)}%</b> ${t('of_students')}` : `${t('better_than')} <b>${r.better_than}%</b> ${t('of_students')}`;
     view(`<div class="wrap" style="max-width:860px;padding:32px 20px 56px">
       <a href="#/course/${tst.course_id}" class="small" style="display:inline-flex;gap:6px;align-items:center">${ic('left', 'sm')} ${t('back_course')}</a>
       <div class="card result" style="margin:16px 0 28px;padding:28px"><div class="ring" style="--p:${p}"><div>${p}%</div></div>
-        <div><span class="eyebrow">${esc(tst.title)}</span><h2 style="margin:8px 0 16px">${t('score')}: <span class="num">${r.score} / ${r.total}</span></h2>
+        <div><span class="eyebrow">${esc(tst.title)}</span><h2 style="margin:8px 0 6px">${esc(msg)}</h2><p class="muted" style="margin:0 0 16px">${t('score')} <b class="num" style="color:var(--ink)">${r.score} / ${r.total}</b> · ${cmp}</p>
         <div class="kpis"><div class="kpi"><span>${t('rank')}</span><b>#${r.rank}</b></div><div class="kpi"><span>${t('accuracy')}</span><b>${attempted ? Math.round((r.score / attempted) * 100) : 0}%</b></div><div class="kpi"><span>${t('answered')}</span><b>${attempted}/${r.total}</b></div></div>
         <a class="btn ghost" style="margin-top:16px" href="#/test/${id}?r=${Date.now()}">${ic('refresh', 'sm')} ${t('retake')}</a></div></div>
       <h3>${t('solutions')}</h3>
       ${r.review.map((q, i) => `<div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;margin-bottom:10px"><span class="eyebrow">${t('q_short')} ${i + 1}</span>${q.chosen === null || q.chosen === undefined ? `<span class="badge">${t('not_answered')}</span>` : q.correct ? `<span class="badge ok">${ic('check', 'sm')}</span>` : `<span class="badge bad">${ic('x', 'sm')}</span>`}</div><div class="qtext" style="font-size:17.5px">${esc(q.text)}</div>${q.options.map((o, j) => `<div class="opt ${j === q.answer_index ? 'right' : j === q.chosen ? 'wrong' : ''}" style="cursor:default"><span class="k">${'ABCDEF'[j]}</span><span>${esc(o)}</span></div>`).join('')}${q.explanation ? `<div class="expl">${ic('bulb', 'sm')}<span>${esc(q.explanation)}</span></div>` : ''}</div>`).join('')}
     </div>`);
     window.scrollTo(0, 0);
+    if (p >= 80) confetti();
   };
   const tick = () => { left--; const el = $('#timer'); if (!el) return clearInterval(timerHandle); $('span', el).textContent = fmt(Math.max(0, left)); el.classList.toggle('low', left <= 60); if (left <= 0) { toast(t('time_up')); submit(); } };
   clearInterval(timerHandle); timerHandle = setInterval(tick, 1000);
@@ -573,11 +636,15 @@ async function test(id) {
 /* ---------------- my learning ---------------- */
 async function my() {
   if (!ME) return go('#/login?next=' + encodeURIComponent('#/my'));
-  const [cs, at] = await Promise.all([api('/api/my/courses'), api('/api/my/attempts')]);
+  const [cs, at, sk] = await Promise.all([api('/api/my/courses'), api('/api/my/attempts'), api('/api/my/streak')]);
+  const h = new Date().getHours(); const greet = h < 12 ? t('gm') : h < 17 ? t('ga') : t('ge');
   const avg = at.length ? Math.round(at.reduce((s, a) => s + (a.total ? a.score / a.total : 0), 0) / at.length * 100) : 0;
   view(`<div class="wrap dash">
-    <span class="eyebrow">${t('my')}</span><h1 style="font-size:clamp(28px,4vw,40px);margin-top:10px">${t('hello')}, ${esc(ME.name.split(' ')[0])}</h1>
+    <span class="eyebrow">${t('my')}</span><h1 style="font-size:clamp(28px,4vw,40px);margin-top:10px">${greet}, ${esc(ME.name.split(' ')[0])}</h1>
     <div id="installslot"></div>
+    <div class="streak"><div class="flame ${sk.streak ? 'on' : ''}" aria-hidden="true">${ic('star', 'lg')}</div><div style="flex:1;min-width:180px"><b class="num">${num(sk.streak)}</b> <span>${t('streak')}</span><p class="small muted" style="margin:2px 0 0">${sk.today ? t('streak_done') : sk.streak ? t('streak_keep') : t('streak_0')}</p></div>
+      <div class="week">${sk.week.map((d) => `<span class="${d.on ? 'on' : ''}" title="${esc(d.d)}">${new Date(d.d).toLocaleDateString(LANG === 'mr' ? 'mr-IN' : 'en-IN', { weekday: 'narrow' })}</span>`).join('')}</div></div>
+    ${(SITE.quotes || []).length ? (() => { const q = SITE.quotes[Math.floor(Date.now() / 864e5) % SITE.quotes.length]; return `<blockquote class="myquote"><p>${esc(L(q, 'text'))}</p><footer>— ${esc(L(q, 'author'))}</footer></blockquote>`; })() : ''}
     <div class="kpis" style="margin:24px 0 40px"><div class="kpi"><span>${t('my_courses')}</span><b>${cs.length}</b></div><div class="kpi"><span>${t('lessons')} · ${t('done')}</span><b>${cs.reduce((s, c) => s + c.done, 0)}</b></div><div class="kpi"><span>${t('tests')}</span><b>${at.length}</b></div><div class="kpi"><span>${t('accuracy')}</span><b>${avg}%</b></div></div>
     <h2 style="font-size:26px">${t('my_courses')}</h2>
     ${cs.length ? `<div class="grid">${cs.map((c) => { const p = c.total ? Math.round((c.done / c.total) * 100) : 0; return `<a class="cc" href="#/course/${c.id}">${cover(c, { big: true })}<div class="body"><div class="row" style="justify-content:space-between"><span class="small muted num">${c.done} / ${c.total} ${t('lessons')}</span><b class="small num">${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div><div class="foot"><span class="xs muted">${t('valid_till')} ${esc((c.expires_at || '').slice(0, 10))}</span><span class="btn sm soft">${ic('play', 'sm')} ${t('continue')}</span></div></div></a>`; }).join('')}</div>`
@@ -781,13 +848,15 @@ const CMS = {
     fields: [['q_en', 'Question (English)'], ['q_mr', 'Question (मराठी)'], ['a_en', 'Answer (English)', 'textarea'], ['a_mr', 'Answer (मराठी)', 'textarea'], ['position', 'Order', 'int']] },
   testimonials: { label: 'Testimonials', hint: 'Real reviews from students or parents. Publish only genuine reviews, with the family’s permission.', row: (r) => `${r.active ? '●' : '○'} ${r.name} – ${'★'.repeat(r.rating || 0)}`,
     fields: [['name', 'Name'], ['meta', 'Detail (e.g. "Parent, Satara · JNVST 2026 selected")'], ['text', 'Review', 'textarea'], ['rating', 'Rating (1–5)', 'int'], ['photo_url', 'Photo (optional)', 'image'], ['position', 'Order', 'int'], ['active', 'Show on website', 'bool']] },
+  quotes: { label: 'Quotes', hint: 'Motivational quotes. One is shown as "Thought for today" on the homepage and in My Learning, and they rotate. Please attribute quotes correctly.', row: (r) => `${r.active ? '●' : '○'} ${(r.text_en || r.text_mr || '').slice(0, 70)} — ${r.author || ''}`,
+    fields: [['text_en', 'Quote (English)', 'textarea'], ['text_mr', 'Quote (मराठी)', 'textarea'], ['author', 'Author (English)'], ['author_mr', 'Author (मराठी)'], ['position', 'Order', 'int'], ['active', 'Show on website', 'bool']] },
   pages: { label: 'Pages', hint: 'About, Contact, Privacy, Terms, Refund or any new page, served at /#/page/<slug>. Formatting: **bold**, [link](https://…), "- " for bullet lists, "# " for headings, blank line for a new paragraph.', row: (r) => `/${r.slug} – ${r.title}`,
     fields: [['slug', 'URL slug (a-z, 0-9, -)'], ['title', 'Title (English)'], ['title_mr', 'Title (मराठी)'], ['body', 'Content (English)', 'textarea'], ['body_mr', 'Content (मराठी, optional)', 'textarea'], ['in_footer', 'Show link in footer', 'bool']] },
 };
 const SETTINGS_FORM = [
   ['Brand', [['brand_name', 'Website / brand name'], ['brand_tagline', 'Tagline (browser title)'], ['logo_url', 'Logo (square PNG)', 'image'], ['primary_color', 'Primary colour', 'color'], ['accent_color', 'Accent colour', 'color'], ['default_language', 'Default language', 'select', ['mr', 'en']]]],
   ['Homepage hero', [['hero_pill_en', 'Top badge (English)'], ['hero_pill_mr', 'Top badge (मराठी)'], ['hero_title_en', 'Headline (English). Wrap words in <em>…</em> to highlight'], ['hero_title_mr', 'Headline (मराठी)'], ['hero_lead_en', 'Sub-text (English)', 'textarea'], ['hero_lead_mr', 'Sub-text (मराठी)', 'textarea']]],
-  ['Homepage sections', [['show_stats', 'Show live numbers card', 'bool'], ['show_testimonials', 'Show testimonials', 'bool'], ['show_features', 'Show "Why choose us" & "How it works"', 'bool']]],
+  ['Homepage sections', [['show_stats', 'Show live numbers card', 'bool'], ['show_testimonials', 'Show testimonials', 'bool'], ['show_features', 'Show "Learn. Practise. Measure."', 'bool'], ['show_countdown', 'Show exam countdowns (set dates in Exams)', 'bool'], ['show_quotes', 'Show "Thought for today" quotes', 'bool'], ['show_dreams', 'Show "Dream big" section for parents', 'bool']]],
   ['Contact & footer', [['contact_phone', 'Phone'], ['contact_whatsapp', 'WhatsApp number (shows a floating chat button)'], ['contact_email', 'Email'], ['contact_address', 'Address'], ['footer_about_en', 'Footer text (English)', 'textarea'], ['footer_about_mr', 'Footer text (मराठी)', 'textarea']]],
   ['Social links', [['social_youtube', 'YouTube URL'], ['social_instagram', 'Instagram URL'], ['social_facebook', 'Facebook URL'], ['social_telegram', 'Telegram URL']]],
 ];
@@ -796,6 +865,7 @@ function fieldHtml([k, label, type, opts], v) {
   if (type === 'image') return `<div class="full">${imageField(k, label, v)}</div>`;
   if (type === 'textarea') return `<div class="full"><label class="lbl">${esc(label)}</label><textarea name="${k}" rows="${k.startsWith('body') ? 10 : 3}">${esc(v ?? '')}</textarea></div>`;
   if (type === 'color') return `<div><label class="lbl">${esc(label)}</label><input type="color" name="${k}" value="${esc(v || '#000000')}" style="height:46px;padding:4px"></div>`;
+  if (type === 'date') return `<div><label class="lbl">${esc(label)}</label><input type="date" name="${k}" value="${esc(v || '')}"></div>`;
   if (type === 'select') return `<div><label class="lbl">${esc(label)}</label><select name="${k}">${opts.map((o) => `<option ${o === v ? 'selected' : ''}>${o}</option>`).join('')}</select></div>`;
   return `<div class="${type === 'int' ? '' : 'full'}"><label class="lbl">${esc(label)}</label><input name="${k}" ${type === 'int' ? 'type="number"' : ''} value="${esc(v ?? '')}"></div>`;
 }
@@ -803,7 +873,7 @@ const readFields = (form, fields) => Object.fromEntries(fields.map(([k, , type])
 async function refreshSite() { SITE = await api('/api/site'); applyTheme(); renderShell(); }
 
 async function websiteAdmin(sub, shell, A, reload) {
-  const subs = [['settings', 'Settings'], ['banners', 'Banners'], ['faqs', 'FAQs'], ['testimonials', 'Testimonials'], ['pages', 'Pages'], ['exams', 'Exams & categories']];
+  const subs = [['settings', 'Settings'], ['banners', 'Banners'], ['faqs', 'FAQs'], ['testimonials', 'Testimonials'], ['quotes', 'Quotes'], ['pages', 'Pages'], ['exams', 'Exams & categories']];
   const nav = `<h2>Website</h2><p class="muted small">Everything on the public website is edited here. Changes go live immediately, with no developer needed.</p><div class="chips" style="margin-bottom:18px">${subs.map(([k, l]) => `<a class="chip ${k === sub ? 'on' : ''}" href="#/admin/website/${k}">${l}</a>`).join('')}</div>`;
 
   if (sub === 'settings') {
@@ -818,9 +888,9 @@ async function websiteAdmin(sub, shell, A, reload) {
 
   if (sub === 'exams') {
     const ex = await api('/api/exams');
-    const F = [['name', 'Name (English)'], ['name_mr', 'Name (मराठी)'], ['icon', 'Icon (emoji)'], ['category', 'Category', 'select', ['entrance', 'scholarship', 'olympiad', 'school']], ['position', 'Order', 'int'], ['description', 'Description: pattern, eligibility, dates', 'textarea']];
+    const F = [['exam_date', 'Next exam date (YYYY-MM-DD) – drives the homepage countdown', 'date'], ['name', 'Name (English)'], ['name_mr', 'Name (मराठी)'], ['icon', 'Icon (emoji)'], ['category', 'Category', 'select', ['entrance', 'scholarship', 'olympiad', 'school']], ['position', 'Order', 'int'], ['description', 'Description: pattern, eligibility, dates', 'textarea']];
     shell(nav + `<details class="card" style="margin-bottom:14px"><summary style="cursor:pointer"><b>Add exam / category</b></summary><form id="nx" class="formgrid" style="margin-top:10px">${fieldHtml(['slug', 'URL slug (e.g. mpsc-foundation)'], '')}${F.map((f) => fieldHtml(f, '')).join('')}<div class="full"><button class="btn">Add</button></div></form></details>
-      ${ex.map((e) => `<details class="card" style="margin-bottom:10px"><summary style="cursor:pointer;display:flex;gap:10px;align-items:center"><span class="avatar" style="width:32px;height:32px;background:${coverColor(e.position, e.id)}">${ic(EXAM_ICON(e.slug, e.category), 'sm')}</span><b>${esc(e.name)}</b><span class="badge">${esc(e.category)}</span><span class="xs muted">${e.courses} courses</span></summary>
+      ${ex.map((e) => `<details class="card" style="margin-bottom:10px"><summary style="cursor:pointer;display:flex;gap:10px;align-items:center"><span class="avatar" style="width:32px;height:32px;background:${coverColor(e.position, e.id)}">${ic(EXAM_ICON(e.slug, e.category), 'sm')}</span><b>${esc(e.name)}</b><span class="badge">${esc(e.category)}</span><span class="xs muted">${e.courses} courses${e.exam_date ? ` · exam ${esc(e.exam_date)}` : ''}</span></summary>
         <form class="formgrid" data-exam="${e.id}" style="margin-top:10px">${F.map((f) => fieldHtml(f, e[f[0]])).join('')}<div class="full row"><button class="btn sm">Save</button><button type="button" class="btn sm ghost" data-delx="${e.id}">Delete</button></div></form></details>`).join('')}`);
     const done = async () => { EXAMS = await api('/api/exams'); reload(); };
     $('#nx').addEventListener('submit', async (e) => { e.preventDefault(); try { await A('/exams', { method: 'POST', body: readFields(e.target, [['slug'], ...F]) }); toast('Exam added'); done(); } catch (er) { toast(er.message); } });

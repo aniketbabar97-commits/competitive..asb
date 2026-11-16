@@ -238,7 +238,10 @@ app.post('/api/tests/:id/submit', auth, (req, res) => {
   });
   db.prepare('INSERT INTO attempts (user_id,test_id,score,total,answers) VALUES (?,?,?,?,?)').run(req.user.id, t.id, score, qs.length, JSON.stringify(clean));
   const rank = db.prepare('SELECT COUNT(DISTINCT user_id)+1 r FROM attempts WHERE test_id=? AND score>?').get(t.id, score).r;
-  res.json({ score, total: qs.length, rank, review });
+  // Percentile against each other student's best attempt on this test.
+  const best = db.prepare('SELECT user_id, MAX(score) s FROM attempts WHERE test_id=? AND user_id<>? GROUP BY user_id').all(t.id, req.user.id);
+  const beaten = best.filter((b) => b.s < score).length;
+  res.json({ score, total: qs.length, rank, takers: best.length + 1, better_than: best.length ? Math.round((beaten / best.length) * 100) : null, review });
 });
 
 app.get('/api/my/courses', auth, (req, res) => {
@@ -247,6 +250,15 @@ app.get('/api/my/courses', auth, (req, res) => {
     (SELECT COUNT(*) FROM lecture_progress lp JOIN lectures l ON l.id=lp.lecture_id WHERE l.course_id=c.id AND lp.user_id=en.user_id) done
     FROM enrollments en JOIN courses c ON c.id=en.course_id
     LEFT JOIN exams e ON e.id=c.exam_id WHERE en.user_id=? ORDER BY en.created_at DESC`).all(req.user.id));
+});
+// Study streak: consecutive days (ending today or yesterday) with a completed lesson or a test attempt.
+app.get('/api/my/streak', auth, (req, res) => {
+  const days = new Set(db.prepare(`SELECT date(completed_at) d FROM lecture_progress WHERE user_id=? UNION SELECT date(created_at) d FROM attempts WHERE user_id=?`).all(req.user.id, req.user.id).map((r) => r.d));
+  const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+  let start = days.has(day(0)) ? 0 : days.has(day(1)) ? 1 : -1, streak = 0;
+  if (start >= 0) while (days.has(day(start + streak))) streak++;
+  const week = Array.from({ length: 7 }, (_, i) => ({ d: day(6 - i), on: days.has(day(6 - i)) }));
+  res.json({ streak, today: days.has(day(0)), week, total_days: days.size });
 });
 app.get('/api/my/attempts', auth, (req, res) => {
   res.json(db.prepare('SELECT a.id,a.score,a.total,a.created_at,t.title FROM attempts a JOIN tests t ON t.id=a.test_id WHERE a.user_id=? ORDER BY a.id DESC LIMIT 50').all(req.user.id));

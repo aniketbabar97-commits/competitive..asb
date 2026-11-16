@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS banners (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, title_mr TEXT, subtitle TEXT, subtitle_mr TEXT, image_url TEXT, link TEXT, active INTEGER NOT NULL DEFAULT 1, position INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS faqs (id INTEGER PRIMARY KEY AUTOINCREMENT, q_en TEXT, q_mr TEXT, a_en TEXT, a_mr TEXT, position INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS testimonials (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, meta TEXT, text TEXT, rating INTEGER DEFAULT 5, photo_url TEXT, active INTEGER NOT NULL DEFAULT 1, position INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS quotes (id INTEGER PRIMARY KEY AUTOINCREMENT, text_en TEXT, text_mr TEXT, author TEXT, author_mr TEXT, active INTEGER NOT NULL DEFAULT 1, position INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS pages (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT UNIQUE NOT NULL, title TEXT, title_mr TEXT, body TEXT, body_mr TEXT, in_footer INTEGER NOT NULL DEFAULT 1);
 `);
 
@@ -19,6 +20,7 @@ const COLLECTIONS = {
   banners: { title: 'text', title_mr: 'text', subtitle: 'text', subtitle_mr: 'text', image_url: 'url', link: 'url', active: 'bool', position: 'int' },
   faqs: { q_en: 'text', q_mr: 'text', a_en: 'text', a_mr: 'text', position: 'int' },
   testimonials: { name: 'text', meta: 'text', text: 'text', rating: 'int', photo_url: 'url', active: 'bool', position: 'int' },
+  quotes: { text_en: 'text', text_mr: 'text', author: 'text', author_mr: 'text', active: 'bool', position: 'int' },
   pages: { slug: 'slug', title: 'text', title_mr: 'text', body: 'text', body_mr: 'text', in_footer: 'bool' },
 };
 const SETTINGS = {
@@ -32,7 +34,7 @@ const SETTINGS = {
   footer_about_mr: 'महाराष्ट्रातील प्रत्येक विद्यार्थ्यासाठी त्याच्या भाषेत परवडणारी, दर्जेदार परीक्षा तयारी.',
   contact_phone: '', contact_whatsapp: '', contact_email: '', contact_address: '',
   social_youtube: '', social_instagram: '', social_facebook: '', social_telegram: '',
-  show_stats: '1', show_testimonials: '1', show_features: '1',
+  show_stats: '1', show_quotes: '1', show_countdown: '1', show_dreams: '1', show_testimonials: '1', show_features: '1',
   default_language: 'mr',
 };
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -61,6 +63,17 @@ function getSettings() {
 }
 
 // ---- seed defaults once ----
+if (!db.prepare('SELECT COUNT(*) c FROM quotes').get().c) {
+  const i = db.prepare('INSERT INTO quotes (text_en,text_mr,author,author_mr,position) VALUES (?,?,?,?,?)');
+  [
+    ['Dream, dream, dream. Dreams transform into thoughts, and thoughts result in action.', 'स्वप्नं पाहा, स्वप्नं पाहा. स्वप्नांचं रूपांतर विचारांत होतं आणि विचारांचं कृतीत.', 'Dr. A. P. J. Abdul Kalam', 'डॉ. ए. पी. जे. अब्दुल कलाम'],
+    ['Arise, awake, and stop not till the goal is reached.', 'उठा, जागे व्हा आणि ध्येय गाठेपर्यंत थांबू नका.', 'Swami Vivekananda', 'स्वामी विवेकानंद'],
+    ['Education is the most powerful weapon which you can use to change the world.', 'शिक्षण हे जग बदलण्यासाठीचं सर्वात शक्तिशाली शस्त्र आहे.', 'Nelson Mandela', 'नेल्सन मंडेला'],
+    ['If you want to shine like a sun, first burn like a sun.', 'सूर्यासारखं तेजस्वी व्हायचं असेल, तर आधी सूर्यासारखं तळपायला शिका.', 'Dr. A. P. J. Abdul Kalam', 'डॉ. ए. पी. जे. अब्दुल कलाम'],
+    ['Effort is always rewarded.', 'प्रयत्नांती परमेश्वर.', 'Marathi proverb', 'मराठी म्हण'],
+    ['Learn, organise, agitate.', 'शिका, संघटित व्हा, संघर्ष करा.', 'Dr. B. R. Ambedkar', 'डॉ. बाबासाहेब आंबेडकर'],
+  ].forEach((r, n) => i.run(...r, n));
+}
 if (!db.prepare('SELECT COUNT(*) c FROM faqs').get().c) {
   const i = db.prepare('INSERT INTO faqs (q_en,q_mr,a_en,a_mr,position) VALUES (?,?,?,?,?)');
   [
@@ -92,6 +105,7 @@ function mount(app, { auth, admin, err, IMAGE_DIR }) {
       banners: db.prepare('SELECT * FROM banners WHERE active=1 ORDER BY position,id').all(),
       faqs: db.prepare('SELECT * FROM faqs ORDER BY position,id').all(),
       testimonials: db.prepare('SELECT * FROM testimonials WHERE active=1 ORDER BY position,id').all(),
+      quotes: db.prepare('SELECT * FROM quotes WHERE active=1 ORDER BY position,id').all(),
       pages: db.prepare('SELECT slug,title,title_mr,in_footer FROM pages ORDER BY id').all(),
       stats: {
         courses: one('SELECT COUNT(*) v FROM courses WHERE published=1'),
@@ -156,9 +170,9 @@ function mount(app, { auth, admin, err, IMAGE_DIR }) {
   }
 
   // Exam catalogue editing
-  const examFields = { name: 'text', name_mr: 'text', category: 'text', icon: 'text', description: 'text', position: 'int', slug: 'slug' };
+  const examFields = { exam_date: 'text', name: 'text', name_mr: 'text', category: 'text', icon: 'text', description: 'text', position: 'int', slug: 'slug' };
   const CATS = ['entrance', 'scholarship', 'olympiad', 'school'];
-  const examBody = (b) => { const f = clean(examFields, b); if ('category' in f && !CATS.includes(f.category)) throw new Error('Invalid category'); if ('icon' in f) f.icon = f.icon.slice(0, 8); if ('name' in f && !f.name.trim()) throw new Error('Name required'); return f; };
+  const examBody = (b) => { const f = clean(examFields, b); if ('category' in f && !CATS.includes(f.category)) throw new Error('Invalid category'); if ('icon' in f) f.icon = f.icon.slice(0, 8); if ('exam_date' in f) { f.exam_date = f.exam_date.trim(); if (f.exam_date && !/^\d{4}-\d{2}-\d{2}$/.test(f.exam_date)) throw new Error('Exam date must be YYYY-MM-DD'); if (!f.exam_date) f.exam_date = null; } if ('name' in f && !f.name.trim()) throw new Error('Name required'); return f; };
   A.post('/exams', (req, res) => {
     try { const f = examBody(req.body || {}); if (!f.slug || !f.name) return err(res, 400, 'Name and slug required'); const k = Object.keys(f);
       res.json({ id: Number(db.prepare(`INSERT INTO exams (${k.join(',')}) VALUES (${k.map(() => '?').join(',')})`).run(...Object.values(f)).lastInsertRowid) });
