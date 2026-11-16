@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const db = require('./db');
+const cms = require('./cms');
 
 const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -18,6 +19,7 @@ const RZP_KEY = process.env.RAZORPAY_KEY_ID;
 const RZP_SECRET = process.env.RAZORPAY_KEY_SECRET;
 const PAYMENT_MODE = RZP_KEY && RZP_SECRET ? 'razorpay' : (IS_PROD ? 'disabled' : 'mock');
 const BUNNY_TOKEN_KEY = process.env.BUNNY_STREAM_TOKEN_KEY;
+const IMAGE_DIR = process.env.IMAGE_DIR || path.join(process.env.DATA_DIR || path.join(__dirname, '..', 'data'), 'media');
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -341,7 +343,7 @@ A.get('/stats', (req, res) => {
 
 A.get('/courses', (req, res) => res.json(db.prepare('SELECT c.*, e.name exam_name FROM courses c LEFT JOIN exams e ON e.id=c.exam_id ORDER BY c.id DESC').all()));
 const BOARDS = ['All', 'State', 'CBSE', 'ICSE'];
-const courseFields = (b) => [int(b.exam_id), str(b.title, 200), str(b.description), str(b.language, 50) || 'Marathi', Math.max(0, int(b.price) || 0), Math.max(0, int(b.mrp) || 0), Math.max(1, int(b.validity_days) || 365), str(b.thumbnail, 500) || null, bool(b.published), BOARDS.includes(b.board) ? b.board : 'All', str(b.class_level, 5) || null, bool(b.featured)];
+const courseFields = (b) => [int(b.exam_id), str(b.title, 200), str(b.description), str(b.language, 50) || 'Marathi', Math.max(0, int(b.price) || 0), Math.max(0, int(b.mrp) || 0), Math.max(1, int(b.validity_days) || 365), (cms.safeUrl(b.thumbnail) || null), bool(b.published), BOARDS.includes(b.board) ? b.board : 'All', str(b.class_level, 5) || null, bool(b.featured)];
 A.post('/courses', (req, res) => {
   const f = courseFields(req.body); if (!f[1]) return err(res, 400, 'Title required');
   const r = db.prepare('INSERT INTO courses (exam_id,title,description,language,price,mrp,validity_days,thumbnail,published,board,class_level,featured) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').run(...f);
@@ -458,6 +460,7 @@ A.post('/announcements', (req, res) => {
 A.delete('/announcements/:id', (req, res) => { db.prepare('DELETE FROM announcements WHERE id=?').run(int(req.params.id)); res.json({ ok: true }); });
 
 app.use('/api/admin', A);
+cms.mount(app, { auth, admin, err, IMAGE_DIR });
 app.use('/api', (req, res) => err(res, 404, 'Not found'));
 
 // ---------- static SPA ----------

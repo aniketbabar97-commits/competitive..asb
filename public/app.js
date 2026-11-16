@@ -6,8 +6,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const store = { get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
-let ME = null, CONFIG = {}, EXAMS = [];
-let LANG = store.get('vp_lang', 'mr');
+let ME = null, CONFIG = {}, EXAMS = [], SITE = { settings: {}, banners: [], faqs: [], testimonials: [], pages: [], stats: {} };
+let LANG = store.get('vp_lang', '');
 
 /* ---------------- i18n ---------------- */
 const I18N = {
@@ -98,6 +98,27 @@ const I18N = {
 };
 const t = (k) => I18N[LANG][k] ?? I18N.en[k] ?? k;
 const examName = (e) => (LANG === 'mr' && (e.name_mr || e.exam_name_mr)) || e.name || e.exam_name || '';
+const S = (k) => SITE.settings[k] ?? '';
+const L = (o, base) => (LANG === 'mr' && (o[base + '_mr'] || '').trim()) || o[base + '_en'] || o[base] || o[base + '_mr'] || '';
+const BRAND = () => S('brand_name') || 'Vidyarthi Path';
+// Hero titles allow <em> highlight only: escape everything, then restore <em>.
+const emHtml = (v) => esc(v).replace(/&lt;(\/?)em&gt;/g, '<$1em>');
+// Mini-markdown for CMS pages: **bold**, [text](https://…), "- " lists, "# " headings, blank-line paragraphs. Input is escaped first.
+function md(src) {
+  const inline = (x) => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/|#\/)[^\s)]+)\)/g, (m, tx, u) => `<a href="${u}" ${u.startsWith('http') ? 'target="_blank" rel="noopener"' : ''}>${tx}</a>`);
+  return String(src || '').split(/\n{2,}/).map((blk) => {
+    const lines = blk.split('\n');
+    if (lines.every((l) => /^\s*-\s+/.test(l))) return `<ul>${lines.map((l) => `<li>${inline(l.replace(/^\s*-\s+/, ''))}</li>`).join('')}</ul>`;
+    if (/^#{1,3}\s/.test(blk)) return `<h3>${inline(blk.replace(/^#+\s/, ''))}</h3>`;
+    return `<p>${lines.map(inline).join('<br>')}</p>`;
+  }).join('');
+}
+function applyTheme() {
+  const r = document.documentElement.style, hex = /^#[0-9a-f]{6}$/i;
+  if (hex.test(S('primary_color'))) { r.setProperty('--primary', S('primary_color')); r.setProperty('--primary-2', S('primary_color')); document.querySelector('meta[name=theme-color]')?.setAttribute('content', S('primary_color')); }
+  if (hex.test(S('accent_color'))) r.setProperty('--accent', S('accent_color'));
+}
+const logo = () => (S('logo_url') ? `<img src="${esc(S('logo_url'))}" alt="">` : '<img src="/icon.svg" alt="">');
 const rs = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 const num = (n) => (LANG === 'mr' ? Number(n).toLocaleString('mr-IN') : Number(n).toLocaleString('en-IN'));
 const CLASSES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -138,7 +159,7 @@ function renderShell() {
   const route = (location.hash.slice(2).split(/[/?]/)[0]) || '';
   const on = (r) => (route === r ? 'on' : '');
   $('#top').innerHTML = `<div class="wrap">
-    <a href="#/" class="brand" aria-label="Vidyarthi Path home"><img src="/icon.svg" alt="">Vidyarthi<b>Path</b></a>
+    <a href="#/" class="brand" aria-label="${esc(BRAND())} home">${logo()}<span>${esc(BRAND())}</span></a>
     <nav class="navlinks hide-sm"><a class="${on('')}" href="#/">${t('home')}</a><a class="${on('explore')}" href="#/explore">${t('explore')}</a>${ME ? `<a class="${on('my')}" href="#/my">${t('my')}</a>` : ''}${ME?.role === 'admin' ? `<a class="${on('admin')}" href="#/admin">${t('admin')}</a>` : ''}</nav>
     <form class="search hide-sm" id="hsearch" role="search"><span>🔍</span><input name="q" placeholder="${esc(t('search_ph'))}" aria-label="Search"></form>
     <div class="spacer"></div>
@@ -154,11 +175,18 @@ function renderShell() {
     s.innerHTML = `<div class="menu wrap" style="position:absolute"><div style="padding:8px 12px"><b>${esc(ME.name)}</b><div class="xs muted">${esc(ME.phone)}</div></div><a href="#/my">🎓 ${t('my')}</a>${ME.role === 'admin' ? `<a href="#/admin">⚙️ ${t('admin')}</a>` : ''}<button id="lo">↩ ${t('logout')}</button></div>`;
     $('#lo').onclick = logout;
   });
-  $('#foot').innerHTML = `<div class="wrap"><div><a href="#/" class="brand" style="padding:0"><img src="/icon.svg" alt="">Vidyarthi<b>Path</b></a><p class="muted small" style="margin-top:10px">${t('foot_about')}</p></div>
+  const soc = [['social_youtube', '▶ YouTube'], ['social_instagram', '◎ Instagram'], ['social_facebook', 'ⓕ Facebook'], ['social_telegram', '✈ Telegram']].filter(([k]) => S(k));
+  $('#foot').innerHTML = `<div class="wrap"><div><a href="#/" class="brand" style="padding:0">${logo()}<span>${esc(BRAND())}</span></a><p class="muted small" style="margin-top:10px">${esc(L(SITE.settings, 'footer_about') || t('foot_about'))}</p>
+   ${S('contact_phone') ? `<a href="tel:${esc(S('contact_phone'))}">📞 ${esc(S('contact_phone'))}</a>` : ''}${S('contact_email') ? `<a href="mailto:${esc(S('contact_email'))}">✉️ ${esc(S('contact_email'))}</a>` : ''}${S('contact_address') ? `<span class="small muted">📍 ${esc(S('contact_address'))}</span>` : ''}
+   ${soc.length ? `<div class="row" style="gap:12px;margin-top:8px">${soc.map(([k, l]) => `<a href="${esc(S(k))}" target="_blank" rel="noopener">${l}</a>`).join('')}</div>` : ''}</div>
    <div><h4>${t('exams')}</h4>${EXAMS.slice(0, 6).map((e) => `<a href="#/explore?exam=${esc(e.slug)}">${esc(examName(e))}</a>`).join('')}</div>
    <div><h4>${t('board')}</h4><a href="#/explore?board=State">${t('state')}</a><a href="#/explore?board=CBSE">CBSE</a><a href="#/explore?board=ICSE">ICSE</a></div>
-   <div><h4>${t('support')}</h4><a href="#/page/contact">${t('contact')}</a><a href="#/page/privacy">${t('privacy')}</a><a href="#/page/terms">${t('terms')}</a><a href="#/page/refund">${t('refund')}</a></div></div>
-   <div class="copy">© ${new Date().getFullYear()} Vidyarthi Path · Not affiliated with NVS, MSCE, CBSE or CISCE</div>`;
+   <div><h4>${t('support')}</h4>${SITE.pages.filter((p) => p.in_footer).map((p) => `<a href="#/page/${esc(p.slug)}">${esc(L(p, 'title'))}</a>`).join('')}</div></div>
+   <div class="copy">© ${new Date().getFullYear()} ${esc(BRAND())} · Not affiliated with NVS, MSCE, CBSE or CISCE</div>`;
+  const wa = S('contact_whatsapp').replace(/\D/g, '');
+  let fab = $('#wafab'); if (wa && !fab) { fab = document.createElement('a'); fab.id = 'wafab'; fab.className = 'wafab'; fab.target = '_blank'; fab.rel = 'noopener'; fab.setAttribute('aria-label', 'WhatsApp'); fab.textContent = '💬'; document.body.appendChild(fab); }
+  if (fab) fab.href = `https://wa.me/${wa.length === 10 ? '91' + wa : wa}`;
+  document.title = `${BRAND()} – ${S('brand_tagline')}`;
 }
 document.addEventListener('click', (e) => { if (!e.target.closest('#menuslot') && !e.target.closest('#av')) { const s = $('#menuslot'); if (s) s.innerHTML = ''; } });
 async function logout() { await api('/api/auth/logout', { method: 'POST', body: {} }); ME = null; go('#/'); route_(); }
@@ -177,7 +205,7 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
 function courseCard(c) {
   const off = pct(c.price, c.mrp);
   return `<a class="cc" href="#/course/${c.id}">
-    <div class="thumb" style="background:${grad(c.id)}">${c.featured ? '<span class="badge accent">★ Bestseller</span>' : ''}<span class="big" aria-hidden="true">${esc(c.exam_icon || '📘')}</span><div class="tt">${esc(c.title)}</div></div>
+    <div class="thumb" style="${c.thumbnail ? `background:center/cover url('${esc(c.thumbnail)}')` : `background:${grad(c.id)}`}">${c.featured ? '<span class="badge accent">★ Bestseller</span>' : ''}${c.thumbnail ? '' : `<span class="big" aria-hidden="true">${esc(c.exam_icon || '📘')}</span><div class="tt">${esc(c.title)}</div>`}</div>
     <div class="body">
       <div class="row" style="gap:6px"><span class="badge">${esc(examName(c))}</span>${c.class_level ? `<span class="badge accent">${t('class')} ${esc(c.class_level)}</span>` : ''}</div>
       <p class="small muted" style="margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(c.description || '')}</p>
@@ -189,27 +217,27 @@ const skelGrid = (n = 4) => `<div class="grid">${Array(n).fill('<div class="skel
 
 /* ---------------- home ---------------- */
 async function home() {
-  const featured = await api('/api/courses?featured=1');
+  const [featured, site] = await Promise.all([api('/api/courses?featured=1'), api('/api/site')]);
+  SITE = site; applyTheme(); const st = SITE.stats;
   const ann = await api('/api/announcements').catch(() => []);
   const popular = EXAMS.filter((e) => ['jnvst-6', 'mh-scholarship-4', 'mh-scholarship-7', 'nmms'].includes(e.slug));
   view(`
   <section class="hero"><div class="wrap">
     <div>
-      <span class="pill">${t('hero_pill')}</span>
-      <h1>${t('hero_h1')}</h1>
-      <p class="lead">${t('hero_lead')}</p>
+      ${L(SITE.settings, 'hero_pill') ? `<span class="pill">${esc(L(SITE.settings, 'hero_pill'))}</span>` : ''}
+      <h1>${emHtml(L(SITE.settings, 'hero_title'))}</h1>
+      <p class="lead">${esc(L(SITE.settings, 'hero_lead'))}</p>
       <form class="search" id="bigsearch" role="search"><span>🔍</span><input name="q" placeholder="${esc(t('search_ph'))}" aria-label="Search courses"></form>
       <div class="quick"><span style="opacity:.8;font-size:14px">${t('popular')}</span> ${popular.map((e) => `<a href="#/explore?exam=${esc(e.slug)}">${esc(examName(e))}</a>`).join('')}</div>
     </div>
-    <div class="hero-card" aria-hidden="true">
-      <div class="stat"><b>13+</b><span>${LANG === 'mr' ? 'परीक्षा व बोर्ड एकाच ठिकाणी' : 'exams & boards in one place'}</span></div>
-      <div class="stat"><b>२ भाषा</b><span>${LANG === 'mr' ? 'मराठी आणि इंग्रजी' : 'Marathi & English'}</span></div>
-      <div class="stat"><b>२४×७</b><span>${LANG === 'mr' ? 'कधीही, कुठेही शिका' : 'learn anytime, anywhere'}</span></div>
-      <div class="stat"><b>₹0</b><span>${LANG === 'mr' ? 'मोफत डेमो लेक्चर्स' : 'free demo lectures'}</span></div>
-    </div>
+    ${S('show_stats') === '1' ? `<div class="hero-card" aria-label="Live numbers">${[
+      [st.courses, LANG === 'mr' ? 'कोर्सेस' : 'courses'], [st.lectures, LANG === 'mr' ? 'व्हिडिओ लेक्चर्स' : 'video lectures'],
+      [st.questions, LANG === 'mr' ? 'सराव प्रश्न' : 'practice questions'], [st.exams, LANG === 'mr' ? 'परीक्षा व बोर्ड' : 'exams & boards']]
+      .map(([n, l]) => `<div class="stat"><b data-count="${n}">${num(n)}</b><span>${l}</span></div>`).join('')}</div>` : ''}
   </div></section>
   <div class="wrap">
     <div id="installslot"></div>
+    ${SITE.banners.length ? `<section class="banners" aria-label="Offers"><div class="btrack" id="btrack">${SITE.banners.map((b) => `<a class="banner" ${b.link ? `href="${esc(b.link)}"` : ''} style="${b.image_url ? `background-image:linear-gradient(90deg,rgba(10,10,30,.65),rgba(10,10,30,.05)),url('${esc(b.image_url)}')` : `background:${grad(b.id)}`}"><div><b>${esc(L(b, 'title'))}</b>${L(b, 'subtitle') ? `<span>${esc(L(b, 'subtitle'))}</span>` : ''}</div></a>`).join('')}</div>${SITE.banners.length > 1 ? `<div class="bdots">${SITE.banners.map((_, i) => `<button aria-label="Banner ${i + 1}" data-b="${i}"></button>`).join('')}</div>` : ''}</section>` : ''}
     ${ann.length ? `<div class="card row" style="margin-top:20px;gap:12px"><span style="font-size:22px">📢</span><div class="grow"><b>${esc(ann[0].title)}</b> <span class="muted">${esc(ann[0].body)}</span></div></div>` : ''}
     <section class="section">
       <div class="sechead"><div><h2>${t('choose_goal')}</h2><p class="muted">${t('choose_goal_sub')}</p></div></div>
@@ -224,14 +252,16 @@ async function home() {
       <div class="sechead"><div><h2>${t('featured')}</h2><p class="muted">${t('featured_sub')}</p></div><a href="#/explore" class="btn ghost sm">${t('view_all')}</a></div>
       <div class="grid">${featured.map(courseCard).join('')}</div>
     </section>
-    <section class="section">
+    ${S('show_testimonials') === '1' && SITE.testimonials.length ? `<section class="section" style="padding-top:0"><div class="sechead"><h2>${LANG === 'mr' ? 'विद्यार्थी व पालक काय म्हणतात' : 'What students & parents say'}</h2></div>
+      <div class="scroll-x"><div class="tgrid">${SITE.testimonials.map((x) => `<figure class="card testi"><div class="stars" aria-label="${x.rating} of 5">${'★'.repeat(Math.max(0, Math.min(5, x.rating || 5)))}</div><blockquote>${esc(x.text)}</blockquote><figcaption>${x.photo_url ? `<img src="${esc(x.photo_url)}" alt="">` : `<span class="avatar">${esc(initials(x.name))}</span>`}<span><b>${esc(x.name)}</b><span class="xs muted">${esc(x.meta)}</span></span></figcaption></figure>`).join('')}</div></div></section>` : ''}
+    ${S('show_features') !== '1' ? '' : `<section class="section">
       <div class="sechead"><h2>${t('why')}</h2></div>
       <div class="grid g3">${[['🗣', 'f1'], ['📝', 'f2'], ['📱', 'f3'], ['💰', 'f4'], ['📈', 'f5'], ['🛡', 'f6']].map(([i, k]) => `<div class="card feat"><span class="ic">${i}</span><div><h3>${t(k)}</h3><p>${t(k + 'd')}</p></div></div>`).join('')}</div>
     </section>
     <section class="section" style="padding-top:0">
       <div class="sechead"><h2>${t('how')}</h2></div>
       <div class="steps">${['s1', 's2', 's3', 's4'].map((k) => `<div class="step"><b>${t(k)}</b></div>`).join('')}</div>
-    </section>
+    </section>`}
     <section class="section"><div class="cta">
       <div><h2>${t('cta_h')}</h2><p>${t('cta_p')}</p></div>
       <form id="lead" class="stack"><input name="name" placeholder="${esc(t('name'))}" maxlength="100" autocomplete="name">
@@ -241,10 +271,17 @@ async function home() {
     </div></section>
     <section class="section" style="padding-top:0;max-width:820px;margin:0 auto">
       <h2 class="center">${t('faq')}</h2>
-      ${[1, 2, 3, 4].map((i) => `<details class="faq"><summary>${t('q' + i)}</summary><p>${t('a' + i)}</p></details>`).join('')}
+      ${SITE.faqs.map((f) => `<details class="faq"><summary>${esc(L(f, 'q'))}</summary><p>${esc(L(f, 'a'))}</p></details>`).join('')}
     </section>
   </div>`);
   renderInstall();
+  const tr = $('#btrack');
+  if (tr && SITE.banners.length > 1) {
+    let bi = 0; const dots = $$('.bdots button'); const show = (i) => { bi = (i + SITE.banners.length) % SITE.banners.length; tr.style.transform = `translateX(-${bi * 100}%)`; dots.forEach((d, j) => d.classList.toggle('on', j === bi)); };
+    dots.forEach((d) => (d.onclick = () => show(Number(d.dataset.b)))); show(0);
+    const iv = setInterval(() => (document.body.contains(tr) ? show(bi + 1) : clearInterval(iv)), 5000);
+  }
+  $$('[data-count]').forEach((el) => { const n = Number(el.dataset.count); if (!n) return; let i = 0; const step = () => { i += Math.ceil(n / 30); el.textContent = num(Math.min(i, n)) + (i >= n ? '+' : ''); if (i < n) requestAnimationFrame(step); }; step(); });
   $('#bigsearch').addEventListener('submit', (e) => { e.preventDefault(); go('#/explore?q=' + encodeURIComponent(e.target.q.value.trim())); });
   $('#lead').addEventListener('submit', async (e) => { e.preventDefault(); try { await api('/api/leads', { method: 'POST', body: formData(e.target) }); e.target.reset(); toast(t('thanks_lead')); } catch (er) { toast(er.message); } });
 }
@@ -460,20 +497,20 @@ function authPage(kind, params) {
   });
 }
 
-/* ---------------- static pages (edit text before launch) ---------------- */
-const PAGES = {
-  contact: ['Contact us', '<p>📞 Call / WhatsApp: <b>+91-XXXXXXXXXX</b><br>✉️ Email: support@example.com<br>🕘 Mon–Sat, 9am–7pm</p>'],
-  privacy: ['Privacy policy', '<p>We collect your name, mobile number, class and district to provide our courses. We never sell your data. Because our learners are children, we process data only with parental consent, as required by the Digital Personal Data Protection Act, 2023. To delete your data, contact support.</p>'],
-  terms: ['Terms of use', '<p>Course content is for personal use by the registered student only. Sharing your login or recording or redistributing content is not allowed and may lead to your account being blocked.</p>'],
-  refund: ['Refund policy', '<p>Refunds are available within 7 days of purchase if less than 20% of the course has been watched. Contact support with your order number.</p>'],
-};
-function page(k) { const p = PAGES[k]; if (!p) return notFound(); view(`<div class="wrap dash" style="max-width:760px"><div class="card"><h1 style="font-size:30px">${p[0]}</h1>${p[1]}</div></div>`); }
+/* ---------------- CMS pages (edited in Admin → Website → Pages) ---------------- */
+async function page(slug) {
+  const p = await api('/api/pages/' + encodeURIComponent(slug));
+  const body = (LANG === 'mr' && (p.body_mr || '').trim()) ? p.body_mr : p.body;
+  const wa = S('contact_whatsapp').replace(/\D/g, '');
+  const contact = slug === 'contact' ? `<div class="stack" style="margin-top:16px">${S('contact_phone') ? `<a class="btn ghost" href="tel:${esc(S('contact_phone'))}">📞 ${esc(S('contact_phone'))}</a>` : ''}${wa ? `<a class="btn" style="background:#25d366" target="_blank" rel="noopener" href="https://wa.me/${wa.length === 10 ? '91' + wa : wa}">💬 WhatsApp</a>` : ''}${S('contact_email') ? `<a class="btn ghost" href="mailto:${esc(S('contact_email'))}">✉️ ${esc(S('contact_email'))}</a>` : ''}${S('contact_address') ? `<p class="muted">📍 ${esc(S('contact_address'))}</p>` : ''}</div>` : '';
+  view(`<div class="wrap dash" style="max-width:780px"><article class="card prose"><h1 style="font-size:32px">${esc(L(p, 'title'))}</h1>${md(body)}${contact}</article></div>`);
+}
 const notFound = () => view(`<div class="wrap"><div class="empty"><div class="em">🧭</div><h2>${t('not_found')}</h2><a class="btn" href="#/">${t('go_home')}</a></div></div>`);
 
 /* ======================================================================
    ADMIN PANEL
    ====================================================================== */
-const ADMIN_TABS = [['dashboard', '📊', 'Dashboard'], ['courses', '📚', 'Courses'], ['users', '👥', 'Students'], ['orders', '🧾', 'Orders'], ['leads', '📞', 'Leads'], ['coupons', '🏷', 'Coupons'], ['announcements', '📢', 'Announcements']];
+const ADMIN_TABS = [['dashboard', '📊', 'Dashboard'], ['courses', '📚', 'Courses'], ['users', '👥', 'Students'], ['orders', '🧾', 'Orders'], ['leads', '📞', 'Leads'], ['coupons', '🏷', 'Coupons'], ['announcements', '📢', 'Announcements'], ['website', '🌐', 'Website']];
 async function adminPage(tab, arg) {
   if (ME?.role !== 'admin') return view(`<div class="wrap"><div class="empty"><div class="em">🔒</div><p>Admins only.</p></div></div>`);
   tab = tab || 'dashboard';
@@ -498,6 +535,7 @@ async function adminPage(tab, arg) {
     shell(`<div class="sechead"><h2>Courses</h2></div><details class="card"><summary style="cursor:pointer"><b>＋ Create new course</b></summary>${courseForm({})}</details>
      <div class="tblwrap" style="margin-top:16px"><table class="tbl"><tr><th>Course</th><th>Exam</th><th>Board / Class</th><th>Price</th><th>Status</th><th></th></tr>
      ${cs.map((c) => `<tr><td><b>${esc(c.title)}</b>${c.featured ? ' <span class="badge accent">★</span>' : ''}</td><td>${esc(c.exam_name || '-')}</td><td>${esc(c.board)} ${c.class_level ? '· ' + esc(c.class_level) : ''}</td><td>${rs(c.price)}</td><td>${c.published ? '<span class="badge ok">Live</span>' : '<span class="badge">Draft</span>'}</td><td><a class="btn sm ghost" href="#/admin/courses/${c.id}">Manage</a></td></tr>`).join('')}</table></div>`);
+    bindUploads();
     $('#cf').addEventListener('submit', async (e) => { e.preventDefault(); try { const r = await A('/courses', { method: 'POST', body: courseBody(e.target) }); toast('Course created'); go('#/admin/courses/' + r.id); } catch (er) { onErr(er); } });
   }
 
@@ -519,6 +557,7 @@ async function adminPage(tab, arg) {
       <div class="card"><h3>📝 Tests (${ct.tests.length})</h3><ul class="items">${ct.tests.map((x) => `<li><span class="t"><b>${esc(x.title)}</b><span class="xs muted">${x.questions} Q · ${x.duration_min}m ${x.is_preview ? '· free' : ''}</span></span><a class="btn sm ghost" href="#/admin/test/${x.id}">Questions</a><button class="iconbtn" data-del="/tests/${x.id}" aria-label="Delete">🗑</button></li>`).join('')}</ul>
        <form id="tf2" class="stack" style="margin-top:12px"><input name="title" placeholder="Test title" required><input name="duration_min" type="number" min="1" placeholder="Duration (minutes)">
        <label class="check"><input type="checkbox" name="is_preview"> Free test</label><button class="btn sm">＋ Add test</button></form></div></div>`);
+    bindUploads();
     $('#cf').addEventListener('submit', async (e) => { e.preventDefault(); try { await A('/courses/' + id, { method: 'PUT', body: courseBody(e.target) }); toast('Saved'); reload(); } catch (er) { onErr(er); } });
     $('#del').onclick = async () => { if (await confirmBox('Delete this course and all its content?', 'Delete')) { try { await A('/courses/' + id, { method: 'DELETE' }); go('#/admin/courses'); } catch (er) { onErr(er); } } };
     $('#lf').addEventListener('submit', async (e) => { e.preventDefault(); try { await A(`/courses/${id}/lectures`, { method: 'POST', body: { ...formData(e.target), is_preview: e.target.is_preview.checked } }); toast('Lecture added'); reload(); } catch (er) { onErr(er); } });
@@ -585,6 +624,8 @@ async function adminPage(tab, arg) {
     bindDeletes(A, reload);
   }
 
+  if (tab === 'website') return websiteAdmin(arg || 'settings', shell, A, reload);
+
   if (tab === 'announcements') {
     const an = await api('/api/announcements');
     shell(`<h2>Announcements</h2><form id="anf" class="card stack" style="margin-bottom:16px"><input name="title" placeholder="Title" required><textarea name="body" rows="2" placeholder="Message (shown on the homepage)"></textarea><button class="btn sm">Publish</button></form>
@@ -601,6 +642,85 @@ function parseCsvLine(line) {
   for (const ch of line.trim()) { if (ch === '"') q = !q; else if ((ch === ',' || ch === '\t') && !q) { out.push(cur.trim()); cur = ''; } else cur += ch; }
   out.push(cur.trim()); return out;
 }
+/* ---------- Website CMS admin ---------- */
+function imageField(name, label, val) {
+  return `<label class="lbl">${esc(label)}</label><div class="row imgfield"><input class="grow" name="${name}" value="${esc(val || '')}" placeholder="https://… or upload →">${val ? `<img src="${esc(val)}" alt="" class="imgprev">` : ''}<label class="btn sm soft" style="cursor:pointer">⬆ Upload<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-upload="${name}" hidden></label></div>`;
+}
+function bindUploads(root = document) {
+  $$('[data-upload]', root).forEach((inp) => (inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return; const fd = new FormData(); fd.append('file', f);
+    try { const r = await api('/api/admin/images', { method: 'POST', body: fd }); const target = inp.closest('form').elements[inp.dataset.upload]; target.value = r.url; toast('Image uploaded – remember to Save'); }
+    catch (e) { toast(e.message); }
+  }));
+}
+const CMS = {
+  banners: { label: 'Banners', hint: 'Slides shown at the top of the homepage. They rotate every 5 seconds.', row: (r) => `${r.active ? '🟢' : '⚪'} ${r.title || '(no title)'}`,
+    fields: [['title', 'Title (English)'], ['title_mr', 'Title (मराठी)'], ['subtitle', 'Subtitle (English)'], ['subtitle_mr', 'Subtitle (मराठी)'], ['image_url', 'Background image (wide, e.g. 1600×500)', 'image'], ['link', 'Link when clicked (e.g. #/course/1 or https://…)'], ['position', 'Order', 'int'], ['active', 'Show on website', 'bool']] },
+  faqs: { label: 'FAQs', hint: 'Questions shown at the bottom of the homepage.', row: (r) => r.q_en || r.q_mr,
+    fields: [['q_en', 'Question (English)'], ['q_mr', 'Question (मराठी)'], ['a_en', 'Answer (English)', 'textarea'], ['a_mr', 'Answer (मराठी)', 'textarea'], ['position', 'Order', 'int']] },
+  testimonials: { label: 'Testimonials', hint: 'Real reviews from students or parents. Only publish genuine ones, with their permission.', row: (r) => `${r.active ? '🟢' : '⚪'} ${r.name} – ${'★'.repeat(r.rating || 0)}`,
+    fields: [['name', 'Name'], ['meta', 'Detail (e.g. "Parent, Satara · JNVST 2026 selected")'], ['text', 'Review', 'textarea'], ['rating', 'Rating (1–5)', 'int'], ['photo_url', 'Photo (optional)', 'image'], ['position', 'Order', 'int'], ['active', 'Show on website', 'bool']] },
+  pages: { label: 'Pages', hint: 'About, Contact, Privacy, Terms, Refund or any new page, served at /#/page/<slug>. Formatting: **bold**, [link](https://…), "- " for bullet lists, "# " for headings, blank line for a new paragraph.', row: (r) => `/${r.slug} – ${r.title}`,
+    fields: [['slug', 'URL slug (a-z, 0-9, -)'], ['title', 'Title (English)'], ['title_mr', 'Title (मराठी)'], ['body', 'Content (English)', 'textarea'], ['body_mr', 'Content (मराठी, optional)', 'textarea'], ['in_footer', 'Show link in footer', 'bool']] },
+};
+const SETTINGS_FORM = [
+  ['Brand', [['brand_name', 'Website / brand name'], ['brand_tagline', 'Tagline (browser title)'], ['logo_url', 'Logo (square PNG)', 'image'], ['primary_color', 'Primary colour', 'color'], ['accent_color', 'Accent colour', 'color'], ['default_language', 'Default language', 'select', ['mr', 'en']]]],
+  ['Homepage hero', [['hero_pill_en', 'Top badge (English)'], ['hero_pill_mr', 'Top badge (मराठी)'], ['hero_title_en', 'Headline (English). Wrap words in <em>…</em> to highlight'], ['hero_title_mr', 'Headline (मराठी)'], ['hero_lead_en', 'Sub-text (English)', 'textarea'], ['hero_lead_mr', 'Sub-text (मराठी)', 'textarea']]],
+  ['Homepage sections', [['show_stats', 'Show live numbers card', 'bool'], ['show_testimonials', 'Show testimonials', 'bool'], ['show_features', 'Show "Why choose us" & "How it works"', 'bool']]],
+  ['Contact & footer', [['contact_phone', 'Phone'], ['contact_whatsapp', 'WhatsApp number (shows a floating chat button)'], ['contact_email', 'Email'], ['contact_address', 'Address'], ['footer_about_en', 'Footer text (English)', 'textarea'], ['footer_about_mr', 'Footer text (मराठी)', 'textarea']]],
+  ['Social links', [['social_youtube', 'YouTube URL'], ['social_instagram', 'Instagram URL'], ['social_facebook', 'Facebook URL'], ['social_telegram', 'Telegram URL']]],
+];
+function fieldHtml([k, label, type, opts], v) {
+  if (type === 'bool') return `<label class="check full"><input type="checkbox" name="${k}" ${String(v) === '1' || v === 1 ? 'checked' : ''}> ${esc(label)}</label>`;
+  if (type === 'image') return `<div class="full">${imageField(k, label, v)}</div>`;
+  if (type === 'textarea') return `<div class="full"><label class="lbl">${esc(label)}</label><textarea name="${k}" rows="${k.startsWith('body') ? 10 : 3}">${esc(v ?? '')}</textarea></div>`;
+  if (type === 'color') return `<div><label class="lbl">${esc(label)}</label><input type="color" name="${k}" value="${esc(v || '#000000')}" style="height:46px;padding:4px"></div>`;
+  if (type === 'select') return `<div><label class="lbl">${esc(label)}</label><select name="${k}">${opts.map((o) => `<option ${o === v ? 'selected' : ''}>${o}</option>`).join('')}</select></div>`;
+  return `<div class="${type === 'int' ? '' : 'full'}"><label class="lbl">${esc(label)}</label><input name="${k}" ${type === 'int' ? 'type="number"' : ''} value="${esc(v ?? '')}"></div>`;
+}
+const readFields = (form, fields) => Object.fromEntries(fields.map(([k, , type]) => [k, type === 'bool' ? (form.elements[k].checked ? 1 : 0) : form.elements[k].value]));
+async function refreshSite() { SITE = await api('/api/site'); applyTheme(); renderShell(); }
+
+async function websiteAdmin(sub, shell, A, reload) {
+  const subs = [['settings', '⚙️ Settings'], ['banners', '🖼 Banners'], ['faqs', '❓ FAQs'], ['testimonials', '⭐ Testimonials'], ['pages', '📄 Pages'], ['exams', '🎯 Exams & categories']];
+  const nav = `<h2>Website</h2><p class="muted small">Everything on the public website is edited here. Changes go live immediately, with no developer needed.</p><div class="chips" style="margin-bottom:18px">${subs.map(([k, l]) => `<a class="chip ${k === sub ? 'on' : ''}" href="#/admin/website/${k}">${l}</a>`).join('')}</div>`;
+
+  if (sub === 'settings') {
+    const st = await A('/settings');
+    const all = SETTINGS_FORM.flatMap(([, f]) => f);
+    shell(nav + `<form id="sf">${SETTINGS_FORM.map(([h, f]) => `<div class="card" style="margin-bottom:14px"><h3>${h}</h3><div class="formgrid">${f.map((x) => fieldHtml(x, st[x[0]])).join('')}</div></div>`).join('')}
+      <div class="savebar"><button class="btn lg">💾 Save website settings</button><a class="btn ghost" href="#/" target="_blank">Preview site ↗</a></div></form>`);
+    bindUploads();
+    $('#sf').addEventListener('submit', async (e) => { e.preventDefault(); try { await A('/settings', { method: 'PUT', body: readFields(e.target, all) }); await refreshSite(); toast('Saved – live on the website'); } catch (er) { toast(er.message); } });
+    return;
+  }
+
+  if (sub === 'exams') {
+    const ex = await api('/api/exams');
+    const F = [['name', 'Name (English)'], ['name_mr', 'Name (मराठी)'], ['icon', 'Icon (emoji)'], ['category', 'Category', 'select', ['entrance', 'scholarship', 'olympiad', 'school']], ['position', 'Order', 'int'], ['description', 'Description: pattern, eligibility, dates', 'textarea']];
+    shell(nav + `<details class="card" style="margin-bottom:14px"><summary style="cursor:pointer"><b>＋ Add exam / category</b></summary><form id="nx" class="formgrid" style="margin-top:10px">${fieldHtml(['slug', 'URL slug (e.g. mpsc-foundation)'], '')}${F.map((f) => fieldHtml(f, '')).join('')}<div class="full"><button class="btn">Add</button></div></form></details>
+      ${ex.map((e) => `<details class="card" style="margin-bottom:10px"><summary style="cursor:pointer;display:flex;gap:10px;align-items:center"><span style="font-size:22px">${esc(e.icon)}</span><b>${esc(e.name)}</b><span class="badge">${esc(e.category)}</span><span class="xs muted">${e.courses} courses</span></summary>
+        <form class="formgrid" data-exam="${e.id}" style="margin-top:10px">${F.map((f) => fieldHtml(f, e[f[0]])).join('')}<div class="full row"><button class="btn sm">Save</button><button type="button" class="btn sm ghost" data-delx="${e.id}">Delete</button></div></form></details>`).join('')}`);
+    const done = async () => { EXAMS = await api('/api/exams'); reload(); };
+    $('#nx').addEventListener('submit', async (e) => { e.preventDefault(); try { await A('/exams', { method: 'POST', body: readFields(e.target, [['slug'], ...F]) }); toast('Exam added'); done(); } catch (er) { toast(er.message); } });
+    $$('[data-exam]').forEach((f) => f.addEventListener('submit', async (e) => { e.preventDefault(); try { await A('/exams/' + f.dataset.exam, { method: 'PUT', body: readFields(f, F) }); toast('Saved'); done(); } catch (er) { toast(er.message); } }));
+    $$('[data-delx]').forEach((b) => (b.onclick = async () => { if (!(await confirmBox('Delete this exam?'))) return; try { await A('/exams/' + b.dataset.delx, { method: 'DELETE' }); done(); } catch (er) { toast(er.message); } }));
+    return;
+  }
+
+  const cfg = CMS[sub]; if (!cfg) return shell(nav + 'Unknown section');
+  const rows = await A('/cms/' + sub);
+  const form = (r = {}) => `<form class="formgrid" data-id="${r.id || ''}" style="margin-top:10px">${cfg.fields.map((f) => fieldHtml(f, r[f[0]] ?? (f[2] === 'bool' ? 1 : f[0] === 'rating' ? 5 : ''))).join('')}<div class="full row"><button class="btn sm">${r.id ? 'Save' : 'Add'}</button>${r.id ? `<button type="button" class="btn sm ghost" data-delc="${r.id}">Delete</button>` : ''}${sub === 'pages' && r.slug ? `<a class="btn sm ghost" href="#/page/${esc(r.slug)}" target="_blank">View ↗</a>` : ''}</div></form>`;
+  shell(nav + `<p class="small muted">${esc(cfg.hint)}</p><details class="card" style="margin-bottom:14px" ${rows.length ? '' : 'open'}><summary style="cursor:pointer"><b>＋ Add ${cfg.label.toLowerCase().replace(/s$/, '')}</b></summary>${form()}</details>
+    ${rows.map((r) => `<details class="card" style="margin-bottom:10px"><summary style="cursor:pointer"><b>${esc(cfg.row(r))}</b></summary>${form(r)}</details>`).join('') || '<p class="muted">Nothing here yet.</p>'}`);
+  bindUploads();
+  $$('form[data-id]').forEach((f) => f.addEventListener('submit', async (e) => {
+    e.preventDefault(); const id = f.dataset.id;
+    try { await A(`/cms/${sub}${id ? '/' + id : ''}`, { method: id ? 'PUT' : 'POST', body: readFields(f, cfg.fields) }); await refreshSite(); toast('Saved – live on the website'); reload(); } catch (er) { toast(er.message); }
+  }));
+  $$('[data-delc]').forEach((b) => (b.onclick = async () => { if (!(await confirmBox(t('confirm')))) return; await A(`/cms/${sub}/${b.dataset.delc}`, { method: 'DELETE' }); await refreshSite(); reload(); }));
+}
+
 const courseBody = (f) => ({ ...formData(f), published: f.published.checked, featured: f.featured.checked });
 const courseForm = (c) => `<form id="cf" style="margin-top:12px"><div class="formgrid">
   <div class="full"><label class="lbl">Title</label><input name="title" required value="${esc(c.title)}"></div>
@@ -608,6 +728,7 @@ const courseForm = (c) => `<form id="cf" style="margin-top:12px"><div class="for
   <div><label class="lbl">Board</label><select name="board">${['All', 'State', 'CBSE', 'ICSE'].map((b) => `<option ${b === (c.board || 'All') ? 'selected' : ''}>${b}</option>`).join('')}</select></div>
   <div><label class="lbl">Class</label><select name="class_level"><option value="">Any</option>${CLASSES.map((x) => `<option ${x === c.class_level ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
   <div><label class="lbl">Language</label><input name="language" value="${esc(c.language || 'Marathi')}"></div>
+  <div class="full">${imageField('thumbnail', 'Thumbnail image (optional, 16:9)', c.thumbnail)}</div>
   <div class="full"><label class="lbl">Description</label><textarea name="description" rows="3">${esc(c.description)}</textarea></div>
   <div><label class="lbl">Price ₹</label><input name="price" type="number" min="0" value="${c.price ?? 0}"></div>
   <div><label class="lbl">MRP ₹ (strike-through)</label><input name="mrp" type="number" min="0" value="${c.mrp ?? 0}"></div>
@@ -646,7 +767,8 @@ async function route_() {
 }
 window.addEventListener('hashchange', () => { route_(); window.scrollTo(0, 0); });
 (async () => {
-  const [me, ex] = await Promise.all([api('/api/me'), api('/api/exams')]);
-  ME = me.user; CONFIG = me; EXAMS = ex;
+  const [me, ex, site] = await Promise.all([api('/api/me'), api('/api/exams'), api('/api/site')]);
+  ME = me.user; CONFIG = me; EXAMS = ex; SITE = site; applyTheme();
+  if (!LANG) LANG = S('default_language') || 'mr';
   route_();
 })();

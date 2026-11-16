@@ -11,6 +11,17 @@ See [`docs/RESEARCH.md`](docs/RESEARCH.md) for market research, product strategy
 
 **Security:** bcrypt passwords, httpOnly JWT session cookie, rate-limited login, Helmet CSP, CSRF protection (same-origin + JSON-only mutations), parameterised SQL, server-side access checks on every paid resource, PDFs kept outside the public folder and served only to enrolled users, PDF magic-byte check on upload, and Razorpay signature verification.
 
+## Dynamic website (CMS)
+Everything on the public site is stored in the database and edited at **Admin → Website**, with no code changes:
+- **Settings:** brand name, logo, colours, default language, hero headline/badge/text (EN + मराठी), which homepage sections to show, contact phone/WhatsApp/email/address, social links, footer text
+- **Banners:** rotating homepage slides with uploaded images and links
+- **FAQs and testimonials** in both languages
+- **Pages:** About, Contact, Privacy, Terms, Refund, or any new page (simple formatting: `**bold**`, `[link](https://…)`, `- lists`)
+- **Exams & categories:** add, rename or reorder exams; edit icons and descriptions
+- **Course thumbnails:** image upload
+
+The homepage numbers (courses, lectures, questions, exams) are live counts. The PWA manifest also uses the current brand. Uploaded images are stored in `DATA_DIR/media` (PNG/JPG/WEBP/GIF only, 3 MB max).
+
 ## Run it
 Requires Node **22.13+** (uses built-in `node:sqlite`).
 ```bash
