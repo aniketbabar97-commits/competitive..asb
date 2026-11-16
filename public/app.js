@@ -289,21 +289,23 @@ function renderShell() {
   const on = (r) => (route === r ? 'on' : '');
   $('#top').innerHTML = `<div class="wrap">
     <a href="#/" class="brand" aria-label="${esc(BRAND())} – home">${logo()}<span>${brandMark()}</span></a>
-    <nav class="navlinks hide-sm" aria-label="Main"><a class="${on('')}" href="#/">${t('home')}</a><a class="${on('explore')}" href="#/explore">${t('explore')}</a>${ME ? `<a class="${on('my')}" href="#/my">${t('my')}</a>` : ''}${ME?.role === 'admin' ? `<a class="${on('admin')}" href="#/admin">${t('admin')}</a>` : ''}</nav>
+    <nav class="navlinks hide-sm" aria-label="Main"><a class="${on('')}" href="#/">${t('home')}</a><a class="${on('explore')}" href="#/explore">${t('explore')}</a><a class="${on('live')}" href="#/live">${t('live')}</a>${ME ? `<a class="${on('my')}" href="#/my">${t('my')}</a>` : ''}${ME?.role === 'admin' ? `<a class="${on('admin')}" href="#/admin">${t('admin')}</a>` : ''}</nav>
     <div class="spacer"></div>
     ${route && route !== 'explore' ? `<form class="search hide-sm" id="hsearch" role="search">${ic('search')}<input name="q" placeholder="${esc(t('find_ph'))}" aria-label="${esc(t('find_ph'))}"></form>` : ''}
     <div class="lang" role="group" aria-label="Language"><button data-lang="mr" class="${LANG === 'mr' ? 'on' : ''}" aria-pressed="${LANG === 'mr'}">मराठी</button><button data-lang="en" class="${LANG === 'en' ? 'on' : ''}" aria-pressed="${LANG === 'en'}">EN</button></div>
+    ${bellHtml()}
     ${ME ? `<button class="avatar" id="av" aria-label="Account menu" aria-haspopup="menu">${esc(initials(ME.name))}</button>` : `<a class="btn ghost sm hide-sm" href="#/login">${t('login')}</a><a class="btn sm" href="#/register">${t('register')}</a>`}
   </div><div id="menuslot"></div>`;
   const tab = (href, icon, label, active) => `<a class="${active ? 'on' : ''}" href="${href}">${ic(icon)}${label}</a>`;
-  $('#tabbar').innerHTML = tab('#/', 'home', t('home'), route === '') + tab('#/explore', 'compass', t('explore'), route === 'explore') + tab('#/my', 'school', t('my'), route === 'my')
+  $('#tabbar').innerHTML = tab('#/', 'home', t('home'), route === '') + tab('#/explore', 'compass', t('explore'), route === 'explore') + tab('#/live', 'live', t('live'), route === 'live') + tab('#/my', 'school', t('my'), route === 'my')
     + (ME?.role === 'admin' ? tab('#/admin', 'grid', t('admin'), route === 'admin') : '') + tab(ME ? '#/account' : '#/login', 'user', ME ? t('account') : t('login'), ['account', 'login', 'register'].includes(route));
   $$('[data-lang]').forEach((b) => (b.onclick = () => { LANG = b.dataset.lang; store.set('vp_lang', LANG); route_(); }));
   $('#hsearch')?.addEventListener('submit', (e) => { e.preventDefault(); go('#/explore?q=' + encodeURIComponent(e.target.q.value.trim())); });
+  bindBell();
   $('#av')?.addEventListener('click', (e) => {
     e.stopPropagation(); const s = $('#menuslot');
     if (s.innerHTML) { s.innerHTML = ''; return; }
-    s.innerHTML = `<div class="menu" role="menu"><div style="padding:8px 12px 6px"><b>${esc(ME.name)}</b><div class="xs muted num">${esc(ME.phone)}</div></div><hr><a href="#/my" role="menuitem">${ic('school')} ${t('my')}</a>${ME.role === 'admin' ? `<a href="#/admin" role="menuitem">${ic('grid')} ${t('admin')}</a>` : ''}<hr><button id="lo" role="menuitem">${ic('logout')} ${t('logout')}</button></div>`;
+    s.innerHTML = `<div class="menu" role="menu"><div style="padding:8px 12px 6px"><b>${esc(ME.name)}</b><div class="xs muted num">${esc(ME.phone)}</div></div><hr><a href="#/my" role="menuitem">${ic('school')} ${t('my')}</a><a href="#/wishlist" role="menuitem">${ic('heart')} ${t('wishlist')}</a><a href="#/live" role="menuitem">${ic('live')} ${t('live_classes')}</a>${ME.role === 'admin' ? `<a href="#/admin" role="menuitem">${ic('grid')} ${t('admin')}</a>` : ''}<hr><button id="lo" role="menuitem">${ic('logout')} ${t('logout')}</button></div>`;
     $('#lo').onclick = logout;
   });
   const soc = [['social_youtube', 'YouTube'], ['social_instagram', 'Instagram'], ['social_facebook', 'Facebook'], ['social_telegram', 'Telegram']].filter(([k]) => S(k));
@@ -321,7 +323,7 @@ function renderShell() {
   if (fab) { fab.href = `https://wa.me/${wa.length === 10 ? '91' + wa : wa}`; fab.hidden = !wa || ['test', 'watch', 'admin'].includes(route); }
   document.title = `${BRAND()} – ${S('brand_tagline')}`;
 }
-document.addEventListener('click', (e) => { if (!e.target.closest('#menuslot') && !e.target.closest('#av')) { const s = $('#menuslot'); if (s) s.innerHTML = ''; } });
+document.addEventListener('click', (e) => { if (!e.target.closest('#menuslot') && !e.target.closest('#av') && !e.target.closest('#bell')) { const s = $('#menuslot'); if (s) s.innerHTML = ''; } });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const s = $('#menuslot'); if (s) s.innerHTML = ''; } });
 async function logout() { await api('/api/auth/logout', { method: 'POST', body: {} }); ME = null; go('#/'); route_(); }
 
@@ -341,10 +343,11 @@ function cover(c, { big = false } = {}) {
 }
 function courseCard(c) {
   const off = pct(c.price, c.mrp);
-  return `<a class="cc" href="#/course/${c.id}">${cover(c)}
+  return `<a class="cc" href="#/course/${c.id}"><span class="ccw">${cover(c)}<button class="wishbtn ${WISH.has(c.id) ? 'on' : ''}" data-wish="${c.id}" aria-label="${esc(t('wishlist'))}" aria-pressed="${WISH.has(c.id)}">${ic('heart', 'sm')}</button></span>
     <div class="body">
       <div class="row" style="gap:6px"><span class="badge pri">${esc(examName(c))}</span>${c.board && c.board !== 'All' ? `<span class="badge">${esc(c.board)}</span>` : ''}</div>
       <p class="desc">${esc(c.description || '')}</p>
+      ${c.reviews || c.instructor ? `<div class="row" style="gap:10px;font-size:13.5px">${ratingLine(c)}${c.instructor ? `<span class="muted">${esc(c.instructor)}</span>` : ''}</div>` : ''}
       <div class="meta"><span>${ic('play', 'sm')}${c.lectures} ${t('lessons')}</span><span>${ic('test', 'sm')}${c.tests} ${t('tests_s')}</span><span>${ic('lang', 'sm')}${esc(c.language)}</span></div>
       <div class="foot"><div><span class="price">${c.price ? rs(c.price) : t('free')}</span>${c.mrp > c.price ? `<span class="mrp">${rs(c.mrp)}</span><span class="off">−${off}%</span>` : ''}</div>${ic('arrow')}</div>
     </div></a>`;
@@ -382,6 +385,7 @@ async function home() {
     <div id="installslot"></div>
     ${(() => { const up = EXAMS.filter((e) => e.exam_date && daysTo(e.exam_date) >= 0).sort((a, b) => a.exam_date.localeCompare(b.exam_date)).slice(0, 3);
       return S('show_countdown') === '1' && up.length ? `<section class="countdown"><div><span class="eyebrow">${t('cd_eyebrow')}</span><h2>${t('cd_h')}</h2></div><div class="cds">${up.map((e) => { const n = daysTo(e.exam_date); return `<a class="cd" href="#/explore?exam=${esc(e.slug)}"><b class="num">${n === 0 ? '🎯' : num(n)}</b><span class="lbl2">${n === 0 ? t('cd_today') : t('days_left')}</span><span class="nm">${esc(examName(e))}</span><span class="dt num" title="${esc(t('cd_tent'))}">${esc(new Date(e.exam_date).toLocaleDateString(LANG === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }))}*</span></a>`; }).join('')}</div><p class="xs muted" style="margin:10px 0 0">* ${t('cd_tent')}</p></section>` : ''; })()}
+    <div id="homelive"></div>
     ${SITE.banners.length ? `<section class="banners" aria-label="Offers"><div class="btrack" id="btrack">${SITE.banners.map((b) => `<a class="banner" ${b.link ? `href="${esc(b.link)}"` : ''} style="${b.image_url ? `background-image:linear-gradient(90deg,rgba(15,20,32,.7),rgba(15,20,32,.05)),url('${esc(b.image_url)}')` : `background:${coverColor(b.id)}`}"><div><b>${esc(L(b, 'title'))}</b>${L(b, 'subtitle') ? `<span>${esc(L(b, 'subtitle'))}</span>` : ''}</div></a>`).join('')}</div>${SITE.banners.length > 1 ? `<div class="bdots">${SITE.banners.map((_, i) => `<button aria-label="Slide ${i + 1}" data-b="${i}"></button>`).join('')}</div>` : ''}</section>` : ''}
     ${ann.length ? `<div class="notice">${ic('mega')}<div><b>${esc(ann[0].title)}</b> ${esc(ann[0].body)}</div></div>` : ''}
 
@@ -430,6 +434,8 @@ async function home() {
     </div></section>` : ''}
   </div>`);
   renderInstall(); bindQuotes(SITE.quotes || []);
+  api('/api/live').then((lv) => { const list = [...lv.now, ...lv.upcoming].slice(0, 3); const h = $('#homelive'); if (!h || !list.length) return;
+    h.innerHTML = `<section style="margin-top:40px"><div class="sechead" style="margin-bottom:16px"><div><span class="eyebrow">${t('live')}</span><h2>${lv.now.length ? t('live_now') : t('live_classes')}</h2></div><a class="btn ghost" href="#/live">${t('view_all')}</a></div><div class="grid">${list.map(liveCard).join('')}</div></section>`; }).catch(() => {});
   const drawExams = (cat) => {
     $('#examlist').innerHTML = EXAMS.filter((e) => e.category === cat && !/-5$|-8$/.test(e.slug)).map((e) => `<a class="exam" href="#/explore?exam=${esc(e.slug)}"><span class="ico" style="background:${coverColor(e.position, e.id)}">${ic(EXAM_ICON(e.slug, e.category))}</span><span class="txt"><b>${esc(examName(e))}</b><span class="d">${esc(e.description || '')}</span></span><span class="go">${ic('arrow')}</span></a>`).join('');
   };
@@ -528,6 +534,7 @@ async function course(id, params) {
     try { const q = await api('/api/checkout/quote', { method: 'POST', body: { course_id: c.id, coupon: $('#coupon').value.trim() } }); $('#cmsg').innerHTML = `<span style="color:var(--ok);font-weight:600">${t('coupon_ok')} ${t('you_pay')} ${rs(q.amount)}</span>`; }
     catch (e) { $('#cmsg').innerHTML = `<span style="color:var(--bad)">${esc(e.message)}</span>`; }
   });
+  await courseExtras(d);
 }
 
 async function buy(courseId, coupon) {
@@ -574,6 +581,7 @@ async function watch(id) {
     <aside class="card" style="padding:0;align-self:start;overflow:hidden"><div style="padding:16px 16px 12px"><h3 style="margin:0">${t('playlist')}</h3><div class="progress" style="margin-top:10px"><i style="width:${d.lectures.length ? (d.lectures.filter((x) => x.done).length / d.lectures.length) * 100 : 0}%"></i></div></div><div class="playlist">
       ${d.lectures.map((x, i) => x.locked ? `<a aria-disabled="true" style="opacity:.55">${ic('lock', 'sm')}<span>${i + 1}. ${esc(x.title)}</span></a>` : `<a href="#/watch/${x.id}" class="${x.id === l.id ? 'on' : ''} ${x.done ? 'done' : ''}">${ic(x.done ? 'check' : 'play', 'sm')}<span style="flex:1">${i + 1}. ${esc(x.title)}</span><span class="xs muted num">${x.duration_min}′</span></a>`).join('')}
     </div></aside></div></div>`);
+  watchExtras(l.id, l.course_id, d.enrolled).catch(() => {});
   $('#mk').onclick = async () => {
     await api(`/api/lectures/${id}/complete`, { method: 'POST', body: { done: !l.done } });
     const ch = tA('cheers'); if (!l.done) toast(ch[Math.floor(Math.random() * ch.length)]);
@@ -649,10 +657,12 @@ async function my() {
     <h2 style="font-size:26px">${t('my_courses')}</h2>
     ${cs.length ? `<div class="grid">${cs.map((c) => { const p = c.total ? Math.round((c.done / c.total) * 100) : 0; return `<a class="cc" href="#/course/${c.id}">${cover(c, { big: true })}<div class="body"><div class="row" style="justify-content:space-between"><span class="small muted num">${c.done} / ${c.total} ${t('lessons')}</span><b class="small num">${p}%</b></div><div class="progress"><i style="width:${p}%"></i></div><div class="foot"><span class="xs muted">${t('valid_till')} ${esc((c.expires_at || '').slice(0, 10))}</span><span class="btn sm soft">${ic('play', 'sm')} ${t('continue')}</span></div></div></a>`; }).join('')}</div>`
       : `<div class="empty card">${ic('book')}<p>${t('no_courses')}</p><a class="btn" href="#/explore">${t('browse')}</a></div>`}
+    <div id="mycerts"></div>
     <h2 style="font-size:26px;margin-top:48px">${t('test_history')}</h2>
     ${at.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>${t('tests')}</th><th>${t('score')}</th><th>%</th><th>Date</th></tr></thead><tbody>${at.map((a) => { const p = a.total ? Math.round((a.score / a.total) * 100) : 0; return `<tr><td>${esc(a.title)}</td><td class="num"><b>${a.score}/${a.total}</b></td><td><span class="badge ${p >= 60 ? 'ok' : p >= 35 ? 'accent' : 'bad'}">${p}%</span></td><td class="muted num">${esc(a.created_at.slice(0, 16))}</td></tr>`; }).join('')}</tbody></table></div>` : `<p class="muted">—</p>`}
   </div>`);
   renderInstall();
+  api('/api/my/certificates').then((cs2) => { if (cs2.length) $('#mycerts').innerHTML = `<h2 style="font-size:26px;margin-top:48px">${t('my_certs')}</h2><div class="grid">${cs2.map((x) => `<a class="card certcard" href="#/certificate/${esc(x.code)}">${ic('cert', 'lg')}<b>${esc(x.title)}</b><span class="xs muted num">${esc(x.code)}</span></a>`).join('')}</div>`; }).catch(() => {});
 }
 function account() {
   if (!ME) return go('#/login');
@@ -698,12 +708,13 @@ const notFound = () => view(`<div class="wrap"><div class="empty" style="padding
 /* ======================================================================
    ADMIN PANEL
    ====================================================================== */
-const ADMIN_TABS = [['dashboard', 'chart', 'Dashboard'], ['courses', 'book', 'Courses'], ['users', 'users', 'Students'], ['orders', 'receipt', 'Orders'], ['leads', 'phone', 'Leads'], ['coupons', 'tag', 'Coupons'], ['announcements', 'mega', 'Announcements'], ['website', 'globe', 'Website']];
+const ADMIN_TABS = [['dashboard', 'chart', 'Dashboard'], ['courses', 'book', 'Courses'], ['live', 'live', 'Live classes'], ['doubts', 'help', 'Doubts'], ['reviews', 'star', 'Reviews'], ['users', 'users', 'Students'], ['orders', 'receipt', 'Orders'], ['leads', 'phone', 'Leads'], ['coupons', 'tag', 'Coupons'], ['announcements', 'mega', 'Announcements'], ['website', 'globe', 'Website']];
 async function adminPage(tab, arg) {
   if (ME?.role !== 'admin') return view(`<div class="wrap"><div class="empty">${ic('lock')}<p>Admins only.</p></div></div>`);
   tab = tab || 'dashboard';
   const A = (p, o) => api('/api/admin' + p, o);
   const reload = () => adminPage(tab, arg);
+  if (tab === 'courses') window.INSTR = await api('/api/instructors').catch(() => []);
   const shell = (inner) => view(`<div class="wrap"><div class="admin"><nav class="side">${ADMIN_TABS.map(([k, i, l]) => `<a class="${k === tab || (tab === 'test' && k === 'courses') ? 'on' : ''}" href="#/admin/${k}">${ic(i)} ${l}</a>`).join('')}</nav><section>${inner}</section></div></div>`);
   const onErr = (er) => toast(er.message);
 
@@ -735,8 +746,8 @@ async function adminPage(tab, arg) {
      <h2>${esc(c.title)}</h2>
      <details class="card"><summary style="cursor:pointer"><b>Course details</b></summary>${courseForm(c)}<button class="btn danger sm" id="del" style="margin-top:10px">Delete course</button></details>
      <div class="grid" style="margin-top:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
-      <div class="card"><h3>Lectures (${ct.lectures.length})</h3><ul class="items">${ct.lectures.map((l) => `<li><span class="t"><b>${l.position}. ${esc(l.title)}</b><span class="xs muted">${l.duration_min}m ${l.is_preview ? '· free preview' : ''}</span></span><button class="iconbtn" data-del="/lectures/${l.id}" aria-label="Delete">${ic('trash')}</button></li>`).join('')}</ul>
-       <form id="lf" class="stack" style="margin-top:12px"><input name="title" placeholder="Lecture title" required><input name="video_url" placeholder="Bunny Stream / YouTube (unlisted) / Vimeo / MP4 URL" required>
+      <div class="card"><h3>Lectures (${ct.lectures.length})</h3><ul class="items">${ct.lectures.map((l) => `<li><span class="t"><b>${l.position}. ${esc(l.title)}</b><span class="xs muted">${l.section ? esc(l.section) + ' · ' : ''}${l.duration_min}m ${l.is_preview ? '· free preview' : ''}</span></span><button class="iconbtn" data-del="/lectures/${l.id}" aria-label="Delete">${ic('trash')}</button></li>`).join('')}</ul>
+       <form id="lf" class="stack" style="margin-top:12px"><input name="title" placeholder="Lecture title" required><input name="video_url" placeholder="Bunny Stream / YouTube (unlisted) / Vimeo / MP4 URL" required><input name="section" placeholder="Chapter / section (e.g. Number series)" list="secs"><datalist id="secs">${[...new Set(ct.lectures.map((l) => l.section).filter(Boolean))].map((x) => `<option value="${esc(x)}">`).join('')}</datalist>
        <div class="row"><input class="grow" name="duration_min" type="number" min="0" placeholder="Minutes"><input class="grow" name="position" type="number" placeholder="Order #"></div>
        <label class="check"><input type="checkbox" name="is_preview"> Free preview</label><button class="btn sm">Add lecture</button></form></div>
       <div class="card"><h3>Notes & PDFs (${ct.materials.length})</h3><ul class="items">${ct.materials.map((m) => `<li><span class="t"><b>${esc(m.title)}</b><span class="xs muted">${esc(m.original_name)} ${m.is_preview ? '· free' : ''}</span></span><button class="iconbtn" data-del="/materials/${m.id}" aria-label="Delete">${ic('trash')}</button></li>`).join('')}</ul>
@@ -812,12 +823,53 @@ async function adminPage(tab, arg) {
     bindDeletes(A, reload);
   }
 
+  if (tab === 'live') {
+    const [ls, cs, ins] = await Promise.all([A('/live'), A('/courses'), api('/api/instructors')]);
+    const local = (iso) => { const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+    const form = (l = {}) => `<form class="formgrid lf" data-id="${l.id || ''}" style="margin-top:12px">
+      <div class="full"><label class="lbl">Title</label><input name="title" required value="${esc(l.title || '')}"></div>
+      <div><label class="lbl">Starts at (your local time)</label><input type="datetime-local" name="starts_at" required value="${l.starts_at ? local(l.starts_at) : ''}"></div>
+      <div><label class="lbl">Duration (minutes)</label><input type="number" name="duration_min" min="5" value="${l.duration_min || 60}"></div>
+      <div><label class="lbl">Course (who can join)</label><select name="course_id"><option value="">Everyone (public)</option>${cs.map((c) => `<option value="${c.id}" ${c.id === l.course_id ? 'selected' : ''}>${esc(c.title)}</option>`).join('')}</select></div>
+      <div><label class="lbl">Teacher</label><select name="instructor_id"><option value="">—</option>${ins.map((i) => `<option value="${i.id}" ${i.id === l.instructor_id ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}</select></div>
+      <div class="full"><label class="lbl">YouTube Live link (embedded on the site with chat beside it)</label><input name="stream_url" placeholder="https://www.youtube.com/live/…" value="${esc(l.stream_url || '')}"></div>
+      <div class="full"><label class="lbl">Zoom / Google Meet link (optional – opens in a new tab)</label><input name="join_url" placeholder="https://meet.google.com/…" value="${esc(l.join_url || '')}"></div>
+      <div class="full"><label class="lbl">Recording link (after the class)</label><input name="recording_url" placeholder="https://www.youtube.com/watch?v=…" value="${esc(l.recording_url || '')}"></div>
+      <div class="full"><label class="lbl">Description</label><textarea name="description" rows="2">${esc(l.description || '')}</textarea></div>
+      <label class="check"><input type="checkbox" name="is_free" ${l.is_free ? 'checked' : ''}> Free for everyone (even if linked to a course)</label>
+      <label class="check"><input type="checkbox" name="chat_enabled" ${l.id && !l.chat_enabled ? '' : 'checked'}> Live chat on</label>
+      ${l.id ? '' : '<label class="check"><input type="checkbox" name="notify" checked> Notify students now</label>'}
+      <div class="full row"><button class="btn sm">${l.id ? 'Save' : 'Schedule class'}</button>${l.id ? `<a class="btn sm ghost" href="#/live/${l.id}" target="_blank">Open room ↗</a><button type="button" class="btn sm ghost" data-att="${l.id}">Attendance (${l.attendees})</button><button type="button" class="btn sm ghost" data-dell="${l.id}">Delete</button>` : ''}</div><div class="full" id="att${l.id || 0}"></div></form>`;
+    const badge = (st) => st === 'live' ? '<span class="livepill">LIVE</span>' : st === 'opening' ? '<span class="badge accent">Opening</span>' : st === 'ended' ? '<span class="badge">Ended</span>' : '<span class="badge pri">Upcoming</span>';
+    shell(`<h2>Live classes</h2><p class="muted small">Go live on YouTube (unlisted is fine), paste the link here, and students watch inside ${esc(BRAND())} with real-time chat. Zoom or Google Meet links work too.</p>
+      <details class="card" open><summary><b>Schedule a live class</b></summary>${form()}</details>
+      ${ls.map((l) => `<details class="card" style="margin-top:10px"><summary>${badge(l.status)} <b>${esc(l.title)}</b> <span class="xs muted">${esc(new Date(l.starts_at).toLocaleString())} · ${esc(l.course_title || 'Public')}</span></summary>${form(l)}</details>`).join('')}`);
+    $$('form.lf').forEach((f) => f.addEventListener('submit', async (e) => { e.preventDefault(); const b = formData(f);
+      const body = { ...b, starts_at: new Date(b.starts_at).toISOString(), is_free: f.is_free.checked, chat_enabled: f.chat_enabled.checked, notify: f.notify ? f.notify.checked : false };
+      try { await A('/live' + (f.dataset.id ? '/' + f.dataset.id : ''), { method: f.dataset.id ? 'PUT' : 'POST', body }); toast('Saved'); reload(); } catch (er) { onErr(er); } }));
+    $$('[data-dell]').forEach((b) => (b.onclick = async () => { if (await confirmBox('Delete this live class?')) { await A('/live/' + b.dataset.dell, { method: 'DELETE' }); reload(); } }));
+    $$('[data-att]').forEach((b) => (b.onclick = async () => { const r = await A(`/live/${b.dataset.att}/attendance`); $('#att' + b.dataset.att).innerHTML = r.length ? `<div class="tblwrap" style="margin-top:10px"><table class="tbl"><tr><th>Student</th><th>Mobile</th><th>Joined</th></tr>${r.map((x) => `<tr><td>${esc(x.name)}</td><td class="num">${esc(x.phone)}</td><td class="muted">${esc(x.joined_at)}</td></tr>`).join('')}</table></div>` : '<p class="muted small">No one has joined yet.</p>'; }));
+    return;
+  }
+  if (tab === 'doubts') {
+    const ds = await A('/doubts');
+    shell(`<h2>Doubts inbox</h2><p class="muted small">Unanswered doubts are listed first. Fast answers are the #1 reason students renew.</p>
+      <div class="tblwrap"><table class="tbl"><tr><th>Question</th><th>Course</th><th>Student</th><th>Status</th><th></th></tr>${ds.map((d) => `<tr><td><a href="#/doubt/${d.id}"><b>${esc(d.title)}</b></a><div class="xs muted">${esc(d.created_at)}</div></td><td>${esc(d.course_title)}</td><td>${esc(d.name)}</td><td>${d.staff_replies ? '<span class="badge ok">Answered</span>' : '<span class="badge bad">Waiting</span>'}</td><td><a class="btn sm" href="#/doubt/${d.id}">Answer</a> <button class="iconbtn" data-del="/doubts/${d.id}" aria-label="Delete">${ic('trash')}</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">No doubts yet</td></tr>'}</table></div>`);
+    bindDeletes(A, reload); return;
+  }
+  if (tab === 'reviews') {
+    const rv = await A('/reviews');
+    shell(`<h2>Reviews</h2><div class="tblwrap"><table class="tbl"><tr><th>Course</th><th>Student</th><th>Rating</th><th>Review</th><th></th></tr>${rv.map((r) => `<tr><td>${esc(r.course_title)}</td><td>${esc(r.name)}</td><td>${stars(r.rating, 'sm')}</td><td style="max-width:360px">${esc(r.body || '')}</td><td><button class="iconbtn" data-del="/reviews/${r.user_id}/${r.course_id}" aria-label="Delete">${ic('trash')}</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">No reviews yet</td></tr>'}</table></div>`);
+    bindDeletes(A, reload); return;
+  }
   if (tab === 'website') return websiteAdmin(arg || 'settings', shell, A, reload);
 
   if (tab === 'announcements') {
     const an = await api('/api/announcements');
-    shell(`<h2>Announcements</h2><form id="anf" class="card stack" style="margin-bottom:16px"><input name="title" placeholder="Title" required><textarea name="body" rows="2" placeholder="Message (shown on the homepage)"></textarea><button class="btn sm">Publish</button></form>
+    const cs0 = await A('/courses');
+    shell(`<h2>Announcements</h2><div class="card" style="margin-bottom:16px"><h3>${ic('bell', 'sm')} Send a notification</h3><p class="small muted">Appears in students’ notification bell.</p><form id="ntf" class="formgrid"><div class="full"><input name="title" placeholder="Title, e.g. Mock test #3 is live" required></div><div class="full"><input name="body" placeholder="Message (optional)"></div><div><select name="course_id"><option value="">All students</option>${cs0.map((c) => `<option value="${c.id}">Enrolled in: ${esc(c.title)}</option>`).join('')}</select></div><div><input name="link" placeholder="Link, e.g. #/live or #/course/1"></div><div class="full"><button class="btn sm">Send</button></div></form></div><form id="anf" class="card stack" style="margin-bottom:16px"><input name="title" placeholder="Title" required><textarea name="body" rows="2" placeholder="Message (shown on the homepage)"></textarea><button class="btn sm">Publish</button></form>
      <div class="card"><ul class="items">${an.map((a) => `<li><span class="t"><b>${esc(a.title)}</b><span class="small muted">${esc(a.body)}</span></span><button class="iconbtn" data-del="/announcements/${a.id}" aria-label="Delete">${ic('trash')}</button></li>`).join('') || '<li class="muted">None</li>'}</ul></div>`);
+    $('#ntf').addEventListener('submit', async (e) => { e.preventDefault(); try { const r = await A('/notify', { method: 'POST', body: formData(e.target) }); toast(`Sent to ${r.sent} students`); e.target.reset(); } catch (er) { onErr(er); } });
     $('#anf').addEventListener('submit', async (e) => { e.preventDefault(); try { await A('/announcements', { method: 'POST', body: formData(e.target) }); reload(); } catch (er) { onErr(er); } });
     bindDeletes(A, reload);
   }
@@ -848,6 +900,8 @@ const CMS = {
     fields: [['q_en', 'Question (English)'], ['q_mr', 'Question (मराठी)'], ['a_en', 'Answer (English)', 'textarea'], ['a_mr', 'Answer (मराठी)', 'textarea'], ['position', 'Order', 'int']] },
   testimonials: { label: 'Testimonials', hint: 'Real reviews from students or parents. Publish only genuine reviews, with the family’s permission.', row: (r) => `${r.active ? '●' : '○'} ${r.name} – ${'★'.repeat(r.rating || 0)}`,
     fields: [['name', 'Name'], ['meta', 'Detail (e.g. "Parent, Satara · JNVST 2026 selected")'], ['text', 'Review', 'textarea'], ['rating', 'Rating (1–5)', 'int'], ['photo_url', 'Photo (optional)', 'image'], ['position', 'Order', 'int'], ['active', 'Show on website', 'bool']] },
+  instructors: { label: 'Instructors', hint: 'Teacher profiles shown on course pages, live classes and certificates. A real photo and experience builds parents’ trust.', row: (r) => `${r.name}${r.title ? ' – ' + r.title : ''}`,
+    fields: [['name', 'Name (English)'], ['name_mr', 'Name (मराठी)'], ['title', 'Subjects / designation'], ['photo_url', 'Photo (square)', 'image'], ['bio', 'Bio & experience (English)', 'textarea'], ['bio_mr', 'Bio (मराठी)', 'textarea'], ['position', 'Order', 'int']] },
   quotes: { label: 'Quotes', hint: 'Motivational quotes. One is shown as "Thought for today" on the homepage and in My Learning, and they rotate. Please attribute quotes correctly.', row: (r) => `${r.active ? '●' : '○'} ${(r.text_en || r.text_mr || '').slice(0, 70)} — ${r.author || ''}`,
     fields: [['text_en', 'Quote (English)', 'textarea'], ['text_mr', 'Quote (मराठी)', 'textarea'], ['author', 'Author (English)'], ['author_mr', 'Author (मराठी)'], ['position', 'Order', 'int'], ['active', 'Show on website', 'bool']] },
   pages: { label: 'Pages', hint: 'About, Contact, Privacy, Terms, Refund or any new page, served at /#/page/<slug>. Formatting: **bold**, [link](https://…), "- " for bullet lists, "# " for headings, blank line for a new paragraph.', row: (r) => `/${r.slug} – ${r.title}`,
@@ -873,7 +927,7 @@ const readFields = (form, fields) => Object.fromEntries(fields.map(([k, , type])
 async function refreshSite() { SITE = await api('/api/site'); applyTheme(); renderShell(); }
 
 async function websiteAdmin(sub, shell, A, reload) {
-  const subs = [['settings', 'Settings'], ['banners', 'Banners'], ['faqs', 'FAQs'], ['testimonials', 'Testimonials'], ['quotes', 'Quotes'], ['pages', 'Pages'], ['exams', 'Exams & categories']];
+  const subs = [['settings', 'Settings'], ['banners', 'Banners'], ['faqs', 'FAQs'], ['instructors', 'Instructors'], ['testimonials', 'Testimonials'], ['quotes', 'Quotes'], ['pages', 'Pages'], ['exams', 'Exams & categories']];
   const nav = `<h2>Website</h2><p class="muted small">Everything on the public website is edited here. Changes go live immediately, with no developer needed.</p><div class="chips" style="margin-bottom:18px">${subs.map(([k, l]) => `<a class="chip ${k === sub ? 'on' : ''}" href="#/admin/website/${k}">${l}</a>`).join('')}</div>`;
 
   if (sub === 'settings') {
@@ -919,6 +973,7 @@ const courseForm = (c) => `<form id="cf" style="margin-top:12px"><div class="for
   <div><label class="lbl">Board</label><select name="board">${['All', 'State', 'CBSE', 'ICSE'].map((b) => `<option ${b === (c.board || 'All') ? 'selected' : ''}>${b}</option>`).join('')}</select></div>
   <div><label class="lbl">Class</label><select name="class_level"><option value="">Any</option>${CLASSES.map((x) => `<option ${x === c.class_level ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
   <div><label class="lbl">Language</label><input name="language" value="${esc(c.language || 'Marathi')}"></div>
+  <div><label class="lbl">Teacher</label><select name="instructor_id"><option value="">—</option>${(window.INSTR || []).map((i) => `<option value="${i.id}" ${i.id === c.instructor_id ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}</select></div>
   <div class="full">${imageField('thumbnail', 'Thumbnail image (optional, 16:9)', c.thumbnail)}</div>
   <div class="full"><label class="lbl">Description</label><textarea name="description" rows="3">${esc(c.description)}</textarea></div>
   <div><label class="lbl">Price ₹</label><input name="price" type="number" min="0" value="${c.price ?? 0}"></div>
@@ -926,6 +981,237 @@ const courseForm = (c) => `<form id="cf" style="margin-top:12px"><div class="for
   <div><label class="lbl">Validity (days)</label><input name="validity_days" type="number" min="1" value="${c.validity_days ?? 365}"></div>
   </div><div class="row"><label class="check"><input type="checkbox" name="published" ${c.published ? 'checked' : ''}> Published</label><label class="check"><input type="checkbox" name="featured" ${c.featured ? 'checked' : ''}> Featured on homepage</label></div>
   <button class="btn">Save course</button></form>`;
+
+
+/* ======================================================================
+   COMMUNITY: live classes + chat, doubts, reviews, wishlist, certificates, notifications, notes
+   ====================================================================== */
+Object.assign(I18N.en, {
+  live: 'Live', live_classes: 'Live classes', live_now: 'Live now', upcoming: 'Upcoming', past: 'Recordings', join: 'Join class', join_ext: 'Open in Zoom / Meet', watch_rec: 'Watch recording',
+  starts_in: 'Starts in', starting: 'Starting soon', ended: 'Ended', free_live: 'Free', enroll_to_join: 'Enroll in the course to join', login_to_join: 'Log in to join',
+  chat: 'Live chat', chat_ph: 'Ask or say something…', send: 'Send', online: 'online', chat_off: 'Chat is turned off for this class', no_live: 'No live classes scheduled right now. Check back soon!',
+  remind: 'We’ll notify you here when it starts.', attendees: 'attended', staff: 'Teacher',
+  doubts: 'Doubts', ask_doubt: 'Ask a doubt', doubt_ph: 'What is your question? Be specific.', doubt_body_ph: 'Add details (optional)', post: 'Post', answers: 'answers', answered_by_teacher: 'Teacher answered',
+  no_doubts: 'No doubts yet. Be the first to ask!', your_answer: 'Write an answer…', resolved: 'Resolved', mark_resolved: 'Mark resolved', helpful: 'Same doubt', enroll_to_ask: 'Enroll to ask doubts',
+  reviews: 'Reviews', ratings: 'ratings', rate_course: 'Rate this course', review_ph: 'What did you like? How did it help? (optional)', save_review: 'Submit review', your_review: 'Your review', no_reviews: 'No reviews yet.',
+  wishlist: 'Wishlist', save: 'Save', saved: 'Saved', wish_empty: 'Your wishlist is empty. Tap ♡ on a course to save it.',
+  cert: 'Certificate', get_cert: 'Get your certificate', cert_title: 'Certificate of Completion', cert_body: 'This is to certify that', cert_done: 'has successfully completed', verify: 'Verify at', print: 'Print / Save as PDF', my_certs: 'My certificates',
+  notifs: 'Notifications', no_notifs: 'You’re all caught up.', mark_read: 'Mark all read', notes_t: 'My notes', notes_ph: 'Write your notes for this lesson. Saved automatically.', notes_saved: 'Saved',
+  instructor: 'Your teacher', lessons_in: 'lessons', about_teacher: 'About the teacher', section_other: 'Lessons',
+});
+Object.assign(I18N.mr, {
+  live: 'लाईव्ह', live_classes: 'लाईव्ह क्लासेस', live_now: 'आत्ता लाईव्ह', upcoming: 'आगामी', past: 'रेकॉर्डिंग्स', join: 'क्लासमध्ये सामील व्हा', join_ext: 'Zoom / Meet मध्ये उघडा', watch_rec: 'रेकॉर्डिंग पहा',
+  starts_in: 'सुरू होण्यास', starting: 'लवकरच सुरू', ended: 'संपला', free_live: 'मोफत', enroll_to_join: 'सामील होण्यासाठी कोर्समध्ये प्रवेश घ्या', login_to_join: 'सामील होण्यासाठी लॉगिन करा',
+  chat: 'लाईव्ह चॅट', chat_ph: 'प्रश्न विचारा किंवा काही लिहा…', send: 'पाठवा', online: 'ऑनलाईन', chat_off: 'या क्लाससाठी चॅट बंद आहे', no_live: 'सध्या कोणताही लाईव्ह क्लास नियोजित नाही. लवकरच पुन्हा पहा!',
+  remind: 'क्लास सुरू झाल्यावर आम्ही इथे सूचना देऊ.', attendees: 'उपस्थित', staff: 'शिक्षक',
+  doubts: 'शंका', ask_doubt: 'शंका विचारा', doubt_ph: 'तुमचा प्रश्न काय आहे? स्पष्ट लिहा.', doubt_body_ph: 'अधिक माहिती (ऐच्छिक)', post: 'पोस्ट करा', answers: 'उत्तरे', answered_by_teacher: 'शिक्षकांनी उत्तर दिले',
+  no_doubts: 'अजून शंका नाहीत. पहिला प्रश्न तुम्हीच विचारा!', your_answer: 'उत्तर लिहा…', resolved: 'सुटली', mark_resolved: 'शंका सुटली', helpful: 'माझीही हीच शंका', enroll_to_ask: 'शंका विचारण्यासाठी प्रवेश घ्या',
+  reviews: 'अभिप्राय', ratings: 'रेटिंग्स', rate_course: 'या कोर्सला रेटिंग द्या', review_ph: 'काय आवडलं? कशी मदत झाली? (ऐच्छिक)', save_review: 'अभिप्राय पाठवा', your_review: 'तुमचा अभिप्राय', no_reviews: 'अजून अभिप्राय नाहीत.',
+  wishlist: 'विशलिस्ट', save: 'सेव्ह', saved: 'सेव्ह केले', wish_empty: 'विशलिस्ट रिकामी आहे. कोर्सवरील ♡ दाबून सेव्ह करा.',
+  cert: 'प्रमाणपत्र', get_cert: 'प्रमाणपत्र मिळवा', cert_title: 'कोर्स पूर्णता प्रमाणपत्र', cert_body: 'प्रमाणित करण्यात येते की', cert_done: 'यांनी यशस्वीरीत्या पूर्ण केला आहे', verify: 'पडताळणी', print: 'प्रिंट / PDF सेव्ह करा', my_certs: 'माझी प्रमाणपत्रे',
+  notifs: 'सूचना', no_notifs: 'नवीन सूचना नाहीत.', mark_read: 'सर्व वाचले', notes_t: 'माझ्या नोट्स', notes_ph: 'या धड्याच्या नोट्स लिहा – आपोआप सेव्ह होतील.', notes_saved: 'सेव्ह झाले',
+  instructor: 'तुमचे शिक्षक', lessons_in: 'धडे', about_teacher: 'शिक्षकांविषयी', section_other: 'धडे',
+});
+Object.assign(ICONS, {
+  live: '<circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/>',
+  bell: '<path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/>', heart: '<path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.6 3.9 4.5 7 4.5c2 0 3.5 1.1 5 3 1.5-1.9 3-3 5-3 3.1 0 5.3 3.1 4.2 6.2C19.5 15.4 12 20 12 20z"/>',
+  help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.2-2.4 3.7M12 17h.01"/>', up: '<path d="m6 15 6-6 6 6"/>',
+  cert: '<rect x="3" y="4" width="18" height="13" rx="2"/><circle cx="12" cy="17" r="3"/><path d="m10.5 19.5-1 2.5 2.5-1 2.5 1-1-2.5M7 8h10M7 11h6"/>', send: '<path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/>', video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/>',
+});
+
+let WISH = new Set(), NOTIF = { unread: 0, list: [] };
+async function loadMine() {
+  if (!ME) { WISH = new Set(); NOTIF = { unread: 0, list: [] }; return; }
+  try { const [w, n] = await Promise.all([api('/api/my/wishlist'), api('/api/my/notifications')]); WISH = new Set(w); NOTIF = n; } catch { /* offline */ }
+}
+setInterval(async () => { if (!ME || document.hidden) return; try { const n = await api('/api/my/notifications'); const changed = n.unread !== NOTIF.unread; NOTIF = n; if (changed) { const b = $('#bellcount'); if (b) { b.textContent = n.unread; b.hidden = !n.unread; } } } catch { /* ignore */ } }, 60000);
+
+const stars = (r, size = '') => { const v = Math.round((r || 0) * 2) / 2; return `<span class="stars ${size}" aria-label="${r || 0} / 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${v >= i ? 'f' : v >= i - .5 ? 'h' : ''}">★</i>`).join('')}</span>`; };
+const ratingLine = (c) => (c.reviews ? `<span class="rating"><b>${Number(c.rating).toFixed(1)}</b>${stars(c.rating, 'sm')}<span class="muted">(${num(c.reviews)})</span></span>` : '');
+const fmtWhen = (iso) => new Date(iso).toLocaleString(LANG === 'mr' ? 'mr-IN' : 'en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+const relTime = (s) => { const d = (Date.now() - Date.parse(s.replace(' ', 'T') + (s.includes('T') ? '' : 'Z'))) / 1000; const f = new Intl.RelativeTimeFormat(LANG === 'mr' ? 'mr' : 'en', { numeric: 'auto' }); return d < 60 ? f.format(0, 'second') : d < 3600 ? f.format(-Math.round(d / 60), 'minute') : d < 86400 ? f.format(-Math.round(d / 3600), 'hour') : f.format(-Math.round(d / 86400), 'day'); };
+function countdownText(iso) { const ms = Date.parse(iso) - Date.now(); if (ms <= 0) return t('starting'); const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 60e3); return h >= 48 ? `${Math.floor(h / 24)}d` : h ? `${h}h ${m}m` : `${m}m`; }
+async function toggleWish(id, btn) {
+  if (!ME) return go('#/login?next=' + encodeURIComponent(location.hash));
+  const r = await api('/api/my/wishlist/' + id, { method: 'POST', body: {} });
+  r.saved ? WISH.add(id) : WISH.delete(id);
+  if (btn) { btn.classList.toggle('on', r.saved); btn.setAttribute('aria-pressed', r.saved); const l = $('span', btn); if (l) l.textContent = r.saved ? t('saved') : t('save'); }
+  toast(r.saved ? t('saved') + ' ♡' : '✓');
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-wish]'); if (b) { e.preventDefault(); e.stopPropagation(); toggleWish(Number(b.dataset.wish), b); } });
+
+function liveCard(l) {
+  const st = l.status === 'live' ? `<span class="livepill">${t('live_now')}</span>` : l.status === 'opening' ? `<span class="livepill soon">${t('starting')}</span>` : l.status === 'ended' ? `<span class="badge">${t('ended')}</span>` : `<span class="badge pri num">${t('starts_in')} ${countdownText(l.starts_at)}</span>`;
+  return `<a class="lc ${l.status}" href="#/live/${l.id}"><div class="lc-top">${st}${l.is_free ? `<span class="badge ok">${t('free_live')}</span>` : ''}</div><b>${esc(l.title)}</b><span class="small muted">${ic('clock', 'sm')} ${esc(fmtWhen(l.starts_at))} · ${l.duration_min} ${t('mins')}</span>${l.course_title ? `<span class="xs muted">${esc(l.course_title)}</span>` : ''}${l.instructor ? `<span class="lc-t">${l.instructor.photo_url ? `<img src="${esc(l.instructor.photo_url)}" alt="">` : `<span class="avatar" style="width:26px;height:26px;font-size:11px">${esc(initials(l.instructor.name))}</span>`}${esc(l.instructor.name)}</span>` : ''}</a>`;
+}
+
+/* ---------- live list & room ---------- */
+async function livePage() {
+  const d = await api('/api/live');
+  const sec = (title, list) => (list.length ? `<section style="margin-top:32px"><h2 style="font-size:24px">${title}</h2><div class="grid">${list.map(liveCard).join('')}</div></section>` : '');
+  view(`<div class="wrap dash"><span class="eyebrow">${t('live')}</span><h1 style="font-size:clamp(30px,4vw,44px);margin-top:10px">${t('live_classes')}</h1>
+    ${!d.now.length && !d.upcoming.length && !d.past.length ? `<div class="empty card">${ic('live')}<p>${t('no_live')}</p></div>` : ''}
+    ${sec(t('live_now'), d.now)}${sec(t('upcoming'), d.upcoming)}${sec(t('past'), d.past.filter((l) => l.has_recording))}</div>`);
+}
+let liveES = null;
+async function liveRoom(id) {
+  const l = await api('/api/live/' + id);
+  if (liveES) { liveES.close(); liveES = null; }
+  const gate = !ME ? `<div class="gate">${ic('lock', 'lg')}<p>${t('login_to_join')}</p><a class="btn" href="#/login?next=${encodeURIComponent('#/live/' + id)}">${t('login')}</a></div>`
+    : !l.access ? `<div class="gate">${ic('lock', 'lg')}<p>${t('enroll_to_join')}</p>${l.course_id ? `<a class="btn accent" href="#/course/${l.course_id}">${esc(l.course_title || t('buy'))}</a>` : ''}</div>` : '';
+  const stage = gate || (l.player ? (l.player.type === 'iframe' ? `<iframe src="${esc(l.player.src)}" title="${esc(l.title)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>` : `<video src="${esc(l.player.src)}" controls playsinline></video>`)
+    : l.status === 'upcoming' ? `<div class="gate"><span class="eyebrow" style="color:var(--accent)">${t('starts_in')}</span><b class="bigcount num" id="lcount">${countdownText(l.starts_at)}</b><p>${esc(fmtWhen(l.starts_at))}</p><p class="small" style="opacity:.7">${t('remind')}</p></div>`
+      : l.status === 'ended' ? `<div class="gate">${ic('video', 'lg')}<p>${t('ended')}</p></div>` : `<div class="gate">${ic('live', 'lg')}<p>${t('starting')}</p></div>`);
+  const showChat = ME && l.access && l.status !== 'upcoming';
+  view(`<div class="wrap"><div class="liveroom ${showChat ? '' : 'nochat'}">
+    <div><div class="row" style="margin-bottom:12px">${l.status === 'live' ? `<span class="livepill">${t('live_now')}</span>` : ''}<a href="#/live" class="small">${ic('left', 'sm')} ${t('live_classes')}</a></div>
+      <div class="player">${stage}</div>
+      <div class="row" style="justify-content:space-between;margin-top:18px;align-items:flex-start"><div style="flex:1;min-width:240px"><h1 style="font-size:clamp(22px,2.8vw,30px)">${esc(l.title)}</h1><p class="muted small">${ic('clock', 'sm')} ${esc(fmtWhen(l.starts_at))} · ${l.duration_min} ${t('mins')}${l.instructor ? ` · ${esc(l.instructor.name)}` : ''}</p>${l.description ? `<p style="color:var(--ink-2)">${esc(l.description)}</p>` : ''}</div>
+      ${l.join_url ? `<a class="btn accent" href="${esc(l.join_url)}" target="_blank" rel="noopener">${ic('video', 'sm')} ${t('join_ext')}</a>` : ''}</div>
+    </div>
+    ${showChat ? `<aside class="chat card"><div class="chat-h"><b>${t('chat')}</b><span class="xs muted"><i class="dot"></i><span id="online">0</span> ${t('online')}</span></div>
+      <div class="chat-list" id="chatlist" aria-live="polite"></div>
+      <form class="chat-f" id="chatf"><input name="body" maxlength="400" placeholder="${esc(t('chat_ph'))}" autocomplete="off" aria-label="${esc(t('chat_ph'))}"><button class="btn sm" aria-label="${esc(t('send'))}">${ic('send', 'sm')}</button></form></aside>` : ''}
+  </div></div>`);
+  if (ME && l.access && (l.status === 'live' || l.status === 'opening')) api(`/api/live/${id}/attend`, { method: 'POST', body: {} }).catch(() => {});
+  if (l.status === 'upcoming') { const iv = setInterval(() => { const el = $('#lcount'); if (!el) return clearInterval(iv); el.textContent = countdownText(l.starts_at); if (Date.parse(l.starts_at) - Date.now() < 15 * 60e3) { clearInterval(iv); route_(); } }, 30000); }
+  if (!showChat) return;
+  const list = $('#chatlist');
+  const atBottom = () => list.scrollHeight - list.scrollTop - list.clientHeight < 60;
+  const add = (m) => { const stick = atBottom(); const el = document.createElement('div'); el.className = 'msg' + (m.user.staff ? ' staff' : '') + (m.user.id === ME.id ? ' me' : ''); el.dataset.id = m.id;
+    el.innerHTML = `<span class="who">${esc(m.user.name)}${m.user.staff ? ` <span class="badge accent">${t('staff')}</span>` : ''}</span><span class="txt">${esc(m.body)}</span>${ME.role === 'admin' ? `<button class="iconbtn del" data-delmsg="${m.id}" aria-label="Delete">${ic('trash', 'sm')}</button>` : ''}`;
+    list.appendChild(el); if (stick) list.scrollTop = list.scrollHeight; };
+  liveES = new EventSource(`/api/live/${id}/chat`);
+  liveES.addEventListener('history', (e) => { const d = JSON.parse(e.data); list.innerHTML = ''; d.messages.forEach(add); list.scrollTop = list.scrollHeight; if (!d.enabled && ME.role !== 'admin') { $('#chatf').innerHTML = `<p class="xs muted" style="margin:0">${t('chat_off')}</p>`; } });
+  liveES.addEventListener('message', (e) => add(JSON.parse(e.data)));
+  liveES.addEventListener('delete', (e) => { const { id: mid } = JSON.parse(e.data); $(`[data-id="${mid}"]`, list)?.remove(); });
+  liveES.addEventListener('presence', (e) => { const o = $('#online'); if (o) o.textContent = num(JSON.parse(e.data).online); });
+  list.addEventListener('click', async (e) => { const b = e.target.closest('[data-delmsg]'); if (b) { await api('/api/admin/chat/' + b.dataset.delmsg, { method: 'DELETE' }).catch((er) => toast(er.message)); } });
+  $('#chatf')?.addEventListener('submit', async (e) => { e.preventDefault(); const inp = e.target.body; const v = inp.value.trim(); if (!v) return; inp.value = ''; try { await api(`/api/live/${id}/chat`, { method: 'POST', body: { body: v } }); } catch (er) { toast(er.message); inp.value = v; } });
+}
+
+/* ---------- doubts ---------- */
+function doubtList(rows, courseId, canAsk, lectureId) {
+  return `${canAsk ? `<form class="askf" data-course="${courseId}" ${lectureId ? `data-lecture="${lectureId}"` : ''}><input name="title" maxlength="200" placeholder="${esc(t('doubt_ph'))}" required><textarea name="body" rows="2" maxlength="3000" placeholder="${esc(t('doubt_body_ph'))}"></textarea><div class="row" style="justify-content:flex-end"><button class="btn sm">${ic('help', 'sm')} ${t('ask_doubt')}</button></div></form>` : (ME ? `<p class="small muted">${t('enroll_to_ask')}</p>` : '')}
+    <ul class="doubts">${rows.map((d) => `<li><button class="vote ${d.voted ? 'on' : ''}" data-vote="${d.id}" ${canAsk ? '' : 'disabled'} aria-label="${esc(t('helpful'))}">${ic('up', 'sm')}<b class="num">${d.votes}</b></button>
+      <a href="#/doubt/${d.id}" class="dq"><b>${esc(d.title)}</b><span class="xs muted">${esc(d.name)} · ${relTime(d.created_at)}${d.lecture_title ? ` · ${esc(d.lecture_title)}` : ''}</span></a>
+      <span class="dmeta">${d.staff_replies ? `<span class="badge ok">${ic('check', 'sm')} ${t('answered_by_teacher')}</span>` : d.resolved ? `<span class="badge ok">${t('resolved')}</span>` : ''}<span class="xs muted num">${d.replies} ${t('answers')}</span></span></li>`).join('') || `<li class="muted small" style="justify-content:center;padding:24px">${t('no_doubts')}</li>`}</ul>`;
+}
+function bindDoubts(root, reload) {
+  $$('.askf', root).forEach((f) => f.addEventListener('submit', async (e) => { e.preventDefault(); const b = $('button', f); b.disabled = true;
+    try { await api(`/api/courses/${f.dataset.course}/doubts`, { method: 'POST', body: { ...formData(f), lecture_id: f.dataset.lecture } }); toast('✓'); reload(); } catch (er) { toast(er.message); b.disabled = false; } }));
+  $$('[data-vote]', root).forEach((b) => (b.onclick = async () => { if (!ME) return go('#/login'); try { const r = await api(`/api/doubts/${b.dataset.vote}/vote`, { method: 'POST', body: {} }); b.classList.toggle('on', r.voted); const n = $('b', b); n.textContent = Number(n.textContent) + (r.voted ? 1 : -1); } catch (er) { toast(er.message); } }));
+}
+async function doubtPage(id) {
+  const d = await api('/api/doubts/' + id);
+  view(`<div class="wrap dash" style="max-width:820px"><a href="#/course/${d.course_id}?tab=doubts" class="small">${ic('left', 'sm')} ${esc(d.course_title)}</a>
+    <article class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><span class="eyebrow">${t('doubts')}</span>${d.resolved ? `<span class="badge ok">${t('resolved')}</span>` : ''}</div>
+      <h1 style="font-size:clamp(22px,3vw,30px);margin-top:10px">${esc(d.title)}</h1>${d.body ? `<p style="white-space:pre-wrap;color:var(--ink-2)">${esc(d.body)}</p>` : ''}<p class="xs muted">${esc(d.name)} · ${relTime(d.created_at)}</p>
+      ${(d.mine || ME?.role === 'admin') && !d.resolved ? `<button class="btn sm ghost" id="resolve">${ic('check', 'sm')} ${t('mark_resolved')}</button>` : ''}</article>
+    <h3 style="margin-top:28px">${d.replies.length} ${t('answers')}</h3>
+    ${d.replies.map((r) => `<div class="card reply ${r.is_staff ? 'staff' : ''}" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><b>${esc(r.name)} ${r.is_staff ? `<span class="badge accent">${t('staff')}</span>` : ''}</b><span class="xs muted">${relTime(r.created_at)}</span></div><p style="white-space:pre-wrap;margin:8px 0 0">${esc(r.body)}</p></div>`).join('')}
+    ${ME ? `<form id="replyf" class="card stack" style="margin-top:16px"><textarea name="body" rows="3" maxlength="4000" placeholder="${esc(t('your_answer'))}" required></textarea><div class="row" style="justify-content:flex-end"><button class="btn">${t('post')}</button></div></form>` : ''}</div>`);
+  $('#resolve')?.addEventListener('click', async () => { await api(`/api/doubts/${id}/resolve`, { method: 'POST', body: {} }); route_(); });
+  $('#replyf')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api(`/api/doubts/${id}/replies`, { method: 'POST', body: formData(e.target) }); route_(); } catch (er) { toast(er.message); } });
+}
+
+/* ---------- reviews ---------- */
+function reviewsHtml(r) {
+  const total = r.n || 0;
+  return `<div class="revsum">${total ? `<div class="big"><b>${Number(r.avg).toFixed(1)}</b>${stars(r.avg)}<span class="small muted">${num(total)} ${t('ratings')}</span></div>
+    <div class="dist">${r.dist.map((n, i) => `<div><span class="num">${5 - i}★</span><i><b style="width:${total ? (n / total) * 100 : 0}%"></b></i><span class="num muted">${n}</span></div>`).join('')}</div>` : `<p class="muted">${t('no_reviews')}</p>`}</div>
+    ${r.can_review ? `<form id="revf" class="revform"><b>${r.mine ? t('your_review') : t('rate_course')}</b><div class="starpick" role="radiogroup">${[1, 2, 3, 4, 5].map((i) => `<label><input type="radio" name="rating" value="${i}" ${r.mine?.rating === i ? 'checked' : ''} required><span aria-label="${i}">★</span></label>`).join('')}</div>
+      <textarea name="body" rows="2" maxlength="2000" placeholder="${esc(t('review_ph'))}">${esc(r.mine?.body || '')}</textarea><div class="row" style="justify-content:flex-end"><button class="btn sm">${t('save_review')}</button></div></form>` : ''}
+    <ul class="revs">${r.list.map((x) => `<li><div class="row" style="justify-content:space-between"><b>${esc(x.name)}</b>${stars(x.rating, 'sm')}</div>${x.body ? `<p>${esc(x.body)}</p>` : ''}<span class="xs muted">${relTime(x.created_at)}</span></li>`).join('')}</ul>`;
+}
+
+/* ---------- course extras: sections, instructor, reviews, Q&A, live, wishlist, certificate ---------- */
+async function courseExtras(d) {
+  const c = d.course;
+  const [rev, dbt, lv] = await Promise.all([api(`/api/courses/${c.id}/reviews`), api(`/api/courses/${c.id}/doubts`), api(`/api/live?course=${c.id}`)]);
+  // header rating + students
+  const meta = $('.chead .meta'); if (meta && rev.n) meta.insertAdjacentHTML('afterbegin', `<span class="rating light"><b>${Number(rev.avg).toFixed(1)}</b>${stars(rev.avg, 'sm')}<span>(${num(rev.n)})</span></span>`);
+  if (meta && c.students) meta.insertAdjacentHTML('beforeend', `<span>${ic('users', 'sm')}${num(c.students)} ${t('students')}</span>`);
+  // tabs: Q&A + live
+  const tabs = $('.tabs'), pane = $('#pane');
+  const liveList = [...lv.now, ...lv.upcoming, ...lv.past.filter((x) => x.has_recording)];
+  tabs.insertAdjacentHTML('beforeend', `<button role="tab" data-xtab="doubts">${t('doubts')} <small>${dbt.length}</small></button>${liveList.length ? `<button role="tab" data-xtab="live">${t('live')} <small>${liveList.length}</small></button>` : ''}`);
+  const extra = { doubts: () => `<div style="padding:12px 0 4px">${doubtList(dbt, c.id, d.enrolled)}</div>`, live: () => `<div class="grid" style="padding:14px 0">${liveList.map(liveCard).join('')}</div>` };
+  const showX = (k) => { $$('.tabs button').forEach((x) => { const on = x.dataset.xtab === k; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); pane.innerHTML = extra[k](); if (k === 'doubts') bindDoubts(pane, () => go(`#/course/${c.id}?tab=doubts&r=${Date.now()}`)); };
+  $$('[data-xtab]').forEach((b) => (b.onclick = () => showX(b.dataset.xtab)));
+  $$('[data-tab]').forEach((b) => b.addEventListener('click', () => $$('[data-xtab]').forEach((x) => x.classList.remove('on'))));
+  const want = new URLSearchParams(location.hash.split('?')[1] || '').get('tab');
+  if (want === 'doubts' || want === 'live') showX(want);
+  // group lectures by section
+  const groupLectures = () => {
+    if (!$('[data-tab="lectures"].on') || !d.lectures.some((l) => l.section)) return;
+    const lis = $$('#pane > li'); let last = null;
+    d.lectures.forEach((l, i) => { const sec = l.section || t('section_other'); if (sec !== last && lis[i]) { lis[i].insertAdjacentHTML('beforebegin', `<li class="sec"><b>${esc(sec)}</b><span class="xs muted num">${d.lectures.filter((x) => (x.section || t('section_other')) === sec).length} ${t('lessons_in')}</span></li>`); last = sec; } });
+  };
+  groupLectures(); $('[data-tab="lectures"]')?.addEventListener('click', () => setTimeout(groupLectures));
+  // instructor + reviews cards after overview
+  const stack = $('.cbody > .stack');
+  if (c.instructor_name) stack.insertAdjacentHTML('beforeend', `<div class="card teacher"><span class="eyebrow">${t('instructor')}</span><div class="row" style="margin-top:12px;align-items:flex-start;flex-wrap:nowrap">${c.instructor_photo ? `<img src="${esc(c.instructor_photo)}" alt="" class="tphoto">` : `<span class="avatar tphoto">${esc(initials(c.instructor_name))}</span>`}<div><h3 style="margin:0">${esc(LANG === 'mr' && c.instructor_name_mr ? c.instructor_name_mr : c.instructor_name)}</h3>${c.instructor_title ? `<p class="small muted" style="margin:2px 0 8px">${esc(c.instructor_title)}</p>` : ''}<p style="margin:0;color:var(--ink-2);white-space:pre-wrap">${esc(LANG === 'mr' && c.instructor_bio_mr ? c.instructor_bio_mr : c.instructor_bio || '')}</p></div></div></div>`);
+  stack.insertAdjacentHTML('beforeend', `<div class="card" id="reviews"><h3>${t('reviews')}</h3>${reviewsHtml(rev)}</div>`);
+  $('#revf')?.addEventListener('submit', async (e) => { e.preventDefault(); try { await api(`/api/courses/${c.id}/reviews`, { method: 'POST', body: formData(e.target) }); toast('✓ ' + t('save_review')); route_(); } catch (er) { toast(er.message); } });
+  // buybox: wishlist + certificate
+  const bb = $('.buybox .card');
+  const total = d.lectures.length, done = d.lectures.filter((l) => l.done).length;
+  if (d.enrolled && total && done === total) bb.insertAdjacentHTML('afterbegin', `<button class="btn accent block" id="getcert" style="margin-bottom:16px">${ic('cert', 'sm')} ${t('get_cert')}</button>`);
+  if (!d.enrolled) $('[data-buy]', bb)?.insertAdjacentHTML('afterend', `<button class="btn ghost block wish ${WISH.has(c.id) ? 'on' : ''}" data-wish="${c.id}" aria-pressed="${WISH.has(c.id)}" style="margin-top:10px">${ic('heart', 'sm')} <span>${WISH.has(c.id) ? t('saved') : t('save')}</span></button>`);
+  $('#getcert')?.addEventListener('click', async () => { try { const r = await api(`/api/courses/${c.id}/certificate`, { method: 'POST', body: {} }); go('#/certificate/' + r.code); } catch (er) { toast(er.message); } });
+  // live-now banner on course page
+  if (lv.now.length) $('.cbody > .stack').insertAdjacentHTML('afterbegin', `<a class="livebar" href="#/live/${lv.now[0].id}"><span class="livepill">${t('live_now')}</span><b>${esc(lv.now[0].title)}</b>${ic('arrow')}</a>`);
+}
+
+/* ---------- watch extras: notes + lesson doubts ---------- */
+async function watchExtras(lectureId, courseId, enrolled) {
+  const host = $('.watch > div'); if (!host) return;
+  const [note, dbt] = await Promise.all([api(`/api/lectures/${lectureId}/note`).catch(() => ({ body: '' })), api(`/api/courses/${courseId}/doubts?lecture=${lectureId}`)]);
+  host.insertAdjacentHTML('beforeend', `<div class="card" style="margin-top:20px;padding-top:0"><div class="tabs" role="tablist"><button class="on" data-wt="notes">${ic('edit', 'sm')} ${t('notes_t')}</button><button data-wt="doubts">${ic('help', 'sm')} ${t('doubts')} <small>${dbt.length}</small></button></div><div id="wpane"></div></div>`);
+  const panes = {
+    notes: () => `<textarea id="note" rows="6" placeholder="${esc(t('notes_ph'))}" style="margin-top:14px">${esc(note.body)}</textarea><p class="xs muted" id="nstat" style="margin:6px 0 0;min-height:1.2em"></p>`,
+    doubts: () => `<div style="padding-top:12px">${doubtList(dbt, courseId, enrolled, lectureId)}</div>`,
+  };
+  const show = (k) => { $$('[data-wt]').forEach((b) => b.classList.toggle('on', b.dataset.wt === k)); $('#wpane').innerHTML = panes[k]();
+    if (k === 'notes') { let tm; $('#note').addEventListener('input', (e) => { clearTimeout(tm); $('#nstat').textContent = '…'; tm = setTimeout(async () => { note.body = e.target.value; await api(`/api/lectures/${lectureId}/note`, { method: 'PUT', body: { body: e.target.value } }).catch(() => {}); const s = $('#nstat'); if (s) s.textContent = '✓ ' + t('notes_saved'); }, 700); }); }
+    else bindDoubts($('#wpane'), () => route_()); };
+  $$('[data-wt]').forEach((b) => (b.onclick = () => show(b.dataset.wt))); show('notes');
+}
+
+/* ---------- certificate ---------- */
+async function certificatePage(code) {
+  const c = await api('/api/certificates/' + encodeURIComponent(code));
+  const url = `${location.origin}/#/certificate/${c.code}`;
+  view(`<div class="wrap dash"><div class="row noprint" style="justify-content:space-between;margin-bottom:16px"><a href="#/my" class="small">${ic('left', 'sm')} ${t('my')}</a><button class="btn" id="printc">${ic('download', 'sm')} ${t('print')}</button></div>
+    <div class="certificate"><div class="cert-in">
+      <div class="cert-brand">${logo()}<span>${brandMark()}</span></div>
+      <span class="eyebrow">${t('cert_title')}</span>
+      <p class="cert-l">${t('cert_body')}</p><h1 class="cert-name">${esc(c.student)}</h1><p class="cert-l">${t('cert_done')}</p>
+      <h2 class="cert-course">${esc(c.course)}</h2>${c.exam ? `<p class="muted">${esc(c.exam)}</p>` : ''}
+      <div class="cert-foot"><div><b>${esc(new Date(c.issued_at.replace(' ', 'T') + 'Z').toLocaleDateString(LANG === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric' }))}</b><span>Date</span></div>
+        <div class="seal">${ic('award', 'lg')}</div>
+        <div><b>${esc(c.instructor || BRAND())}</b><span>${t('instructor')}</span></div></div>
+      <p class="xs muted cert-v">${t('verify')}: ${esc(url)} · ID ${esc(c.code)}</p>
+    </div></div></div>`);
+  $('#printc').onclick = () => window.print();
+}
+/* ---------- wishlist page ---------- */
+async function wishPage() {
+  if (!ME) return go('#/login?next=' + encodeURIComponent('#/wishlist'));
+  const all = await api('/api/courses'); const list = all.filter((c) => WISH.has(c.id));
+  view(`<div class="wrap dash"><span class="eyebrow">${ic('heart', 'sm')}</span><h1 style="font-size:clamp(28px,4vw,40px);margin-top:10px">${t('wishlist')}</h1>${list.length ? `<div class="grid">${list.map(courseCard).join('')}</div>` : `<div class="empty card">${ic('heart')}<p>${t('wish_empty')}</p><a class="btn" href="#/explore">${t('browse')}</a></div>`}</div>`);
+}
+/* ---------- notification bell ---------- */
+function bellHtml() { return ME ? `<button class="iconbtn bell" id="bell" aria-label="${esc(t('notifs'))}">${ic('bell')}<span id="bellcount" class="bc" ${NOTIF.unread ? '' : 'hidden'}>${NOTIF.unread}</span></button>` : ''; }
+function bindBell() {
+  $('#bell')?.addEventListener('click', async (e) => {
+    e.stopPropagation(); const s = $('#menuslot'); if (s.innerHTML) { s.innerHTML = ''; return; }
+    s.innerHTML = `<div class="menu notif" role="menu"><div class="row" style="justify-content:space-between;padding:8px 12px"><b>${t('notifs')}</b>${NOTIF.unread ? `<button class="btn link xs" id="readall" style="width:auto">${t('mark_read')}</button>` : ''}</div><hr>
+      ${NOTIF.list.length ? NOTIF.list.map((n) => `<a href="${esc(n.link || '#/my')}" class="${n.read ? '' : 'unread'}"><span><b>${esc(n.title)}</b>${n.body ? `<span class="xs muted">${esc(n.body)}</span>` : ''}<span class="xs muted">${relTime(n.created_at)}</span></span></a>`).join('') : `<p class="small muted" style="padding:12px">${t('no_notifs')}</p>`}</div>`;
+    $('#readall')?.addEventListener('click', async (ev) => { ev.stopPropagation(); await api('/api/my/notifications/read', { method: 'POST', body: {} }); NOTIF.unread = 0; NOTIF.list.forEach((n) => (n.read = 1)); s.innerHTML = ''; renderShell(); });
+  });
+}
 
 /* ======================================================================
    ROUTER
@@ -935,6 +1221,8 @@ async function route_() {
   const params = new URLSearchParams(qs || '');
   const parts = p.split('/').filter(Boolean);
   clearInterval(timerHandle);
+  if (liveES && parts[0] !== 'live') { liveES.close(); liveES = null; }
+  await loadMine();
   renderShell();
   const needAuth = (fn) => (ME ? fn() : go('#/login?next=' + encodeURIComponent(location.hash)));
   try {
@@ -948,6 +1236,10 @@ async function route_() {
       case 'account': return account();
       case 'login': case 'register': return authPage(parts[0], params);
       case 'page': return page(parts[1]);
+      case 'live': return parts[1] ? await liveRoom(parts[1]) : await livePage();
+      case 'doubt': return await doubtPage(parts[1]);
+      case 'certificate': return await certificatePage(parts[1]);
+      case 'wishlist': return await wishPage();
       case 'admin': return await adminPage(parts[1], parts[2] && decodeURIComponent(parts[2]));
       default: return notFound();
     }

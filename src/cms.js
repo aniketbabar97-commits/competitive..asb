@@ -20,6 +20,7 @@ const COLLECTIONS = {
   banners: { title: 'text', title_mr: 'text', subtitle: 'text', subtitle_mr: 'text', image_url: 'url', link: 'url', active: 'bool', position: 'int' },
   faqs: { q_en: 'text', q_mr: 'text', a_en: 'text', a_mr: 'text', position: 'int' },
   testimonials: { name: 'text', meta: 'text', text: 'text', rating: 'int', photo_url: 'url', active: 'bool', position: 'int' },
+  instructors: { name: 'text', name_mr: 'text', title: 'text', bio: 'text', bio_mr: 'text', photo_url: 'url', position: 'int' },
   quotes: { text_en: 'text', text_mr: 'text', author: 'text', author_mr: 'text', active: 'bool', position: 'int' },
   pages: { slug: 'slug', title: 'text', title_mr: 'text', body: 'text', body_mr: 'text', in_footer: 'bool' },
 };

@@ -11,6 +11,15 @@ See [`docs/RESEARCH.md`](docs/RESEARCH.md) for market research, product strategy
 
 **Security:** bcrypt passwords, httpOnly JWT session cookie, rate-limited login, Helmet CSP, CSRF protection (same-origin + JSON-only mutations), parameterised SQL, server-side access checks on every paid resource, PDFs kept outside the public folder and served only to enrolled users, PDF magic-byte check on upload, and Razorpay signature verification.
 
+## Learning community (Udemy-style)
+- **Live classes:** schedule in Admin → Live classes. Stream on YouTube Live (embedded) and/or give a Zoom/Meet link. The site shows "Live now" banners, countdowns, attendance and recordings. Access is limited to enrolled students unless the class is marked free.
+- **Live chat:** real-time chat beside the stream (Server-Sent Events, no extra service), online count, staff badge, admins can delete messages, 1 message per 3 seconds per student.
+- **Doubts / Q&A:** per course and per lesson, with upvotes, teacher answers, a "resolved" state and an admin inbox with unanswered doubts first.
+- **Ratings & reviews** (enrolled students only), star averages on cards and course pages, admin moderation.
+- **Wishlist, certificates** (auto-issued at 100% completion, printable, public verification link), a **notification bell**, **personal notes per lesson**, **instructor profiles**, and **curriculum sections**.
+
+> Scaling note: chat runs in-process. Past roughly 2–3k concurrent viewers per server, add Redis pub/sub or move chat to a managed service (Ably/Pusher).
+
 ## Dynamic website (CMS)
 Everything on the public site is stored in the database and edited at **Admin → Website**, with no code changes:
 - **Settings:** brand name, logo, colours, default language, hero headline/badge/text (EN + मराठी), which homepage sections to show, contact phone/WhatsApp/email/address, social links, footer text
