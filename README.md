@@ -1,13 +1,13 @@
 # Vidyarthi Path 📘
 
-An online learning and course-selling platform for **JNVST (Navodaya) Class 6 & 9**, **Maharashtra Scholarship (5th/8th)** and **NMMS** preparation. It sells video lectures, PDF notes and timed mock tests, and has a full admin panel.
+A bilingual (**मराठी / English**) learning platform for **Navodaya (JNVST)**, **Maharashtra Scholarship (Class 4 & 7)**, **NMMS**, **Sainik School**, **Olympiads**, and **State Board / CBSE / ICSE** Classes 1–12. It sells video lectures, PDF notes and timed mock tests, works as an installable app (PWA), and has a full admin panel.
 
 See [`docs/RESEARCH.md`](docs/RESEARCH.md) for market research, product strategy and the roadmap.
 
 ## Features
-**Students:** browse courses by exam, free preview lectures/PDFs/tests, register/login with mobile + password, buy with Razorpay (UPI/cards) and apply coupons, watch lectures, open PDFs, take timed mock tests with instant score, rank and explanations, and see their own course list and test history.
+**Students:** switch between Marathi and English, filter by goal/exam, board and class, install the site as an app, track lecture progress, take mock tests with a question palette and mark-for-review, browse courses by exam, free preview lectures/PDFs/tests, register/login with mobile + password, buy with Razorpay (UPI/cards) and apply coupons, watch lectures, open PDFs, take timed mock tests with instant score, rank and explanations, and see their own course list and test history.
 
-**Admin (`#/admin`):** revenue/enrollment dashboard, create/edit/publish courses (price, MRP, validity), add lectures (YouTube unlisted/Vimeo/MP4), upload PDFs, build tests (single question or CSV bulk import), manage users (search, block, make admin, grant or revoke course access manually for cash/UPI payments), orders with CSV export, coupons and announcements.
+**Admin (`#/admin`):** call-back leads (with WhatsApp link), sign-up chart, featured courses, board/class tagging, revenue/enrollment dashboard, create/edit/publish courses (price, MRP, validity), add lectures (YouTube unlisted/Vimeo/MP4), upload PDFs, build tests (single question or CSV bulk import), manage users (search, block, make admin, grant or revoke course access manually for cash/UPI payments), orders with CSV export, coupons and announcements.
 
 **Security:** bcrypt passwords, httpOnly JWT session cookie, rate-limited login, Helmet CSP, CSRF protection (same-origin + JSON-only mutations), parameterised SQL, server-side access checks on every paid resource, PDFs kept outside the public folder and served only to enrolled users, PDF magic-byte check on upload, and Razorpay signature verification.
 
@@ -28,6 +28,7 @@ Without Razorpay keys, payments run in **mock mode** (a confirm dialog simulates
 | `JWT_SECRET` | Long random string |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Enables live payments |
 | `ADMIN_PHONE`, `ADMIN_PASSWORD` | First admin account |
+| `BUNNY_STREAM_TOKEN_KEY` | Bunny Stream token-auth key: lecture links are signed and expire after 3 hours |
 | `PORT`, `DATA_DIR`, `UPLOAD_DIR` | Server port, database folder, PDF storage |
 
 ## Structure

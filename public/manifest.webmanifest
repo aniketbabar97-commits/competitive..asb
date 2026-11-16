@@ -1,0 +1,15 @@
+{
+  "name": "Vidyarthi Path",
+  "short_name": "Vidyarthi",
+  "description": "Navodaya, Scholarship & Board exam preparation in Marathi and English",
+  "start_url": "/#/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7fb",
+  "theme_color": "#3b2fc9",
+  "lang": "mr-IN",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

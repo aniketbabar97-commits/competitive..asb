@@ -17,6 +17,7 @@ if (!JWT_SECRET) { console.error('JWT_SECRET must be set in production'); proces
 const RZP_KEY = process.env.RAZORPAY_KEY_ID;
 const RZP_SECRET = process.env.RAZORPAY_KEY_SECRET;
 const PAYMENT_MODE = RZP_KEY && RZP_SECRET ? 'razorpay' : (IS_PROD ? 'disabled' : 'mock');
+const BUNNY_TOKEN_KEY = process.env.BUNNY_STREAM_TOKEN_KEY;
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -28,11 +29,14 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", 'https://checkout.razorpay.com'],
-      frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
+      frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://iframe.mediadelivery.net', 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
       connectSrc: ["'self'", 'https://lumberjack.razorpay.com', 'https://api.razorpay.com'],
       imgSrc: ["'self'", 'data:', 'https:'],
       mediaSrc: ["'self'", 'https:'],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      workerSrc: ["'self'"],
+      manifestSrc: ["'self'"],
     },
   },
 }));
@@ -92,6 +96,18 @@ function embedUrl(url) {
     if (!['http:', 'https:'].includes(u.protocol)) return null;
     if (/(^|\.)youtube\.com$/.test(u.hostname) && u.searchParams.get('v')) return { type: 'iframe', src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(u.searchParams.get('v'))}?rel=0&modestbranding=1` };
     if (u.hostname === 'youtu.be') return { type: 'iframe', src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(u.pathname.slice(1))}?rel=0&modestbranding=1` };
+    // Bunny Stream (cheapest option for India). Accepts iframe.mediadelivery.net/embed|play/{library}/{videoId}
+    if (u.hostname === 'iframe.mediadelivery.net' || u.hostname === 'player.mediadelivery.net') {
+      const [, , lib, vid] = u.pathname.split('/');
+      if (!lib || !vid) return null;
+      let src = `https://iframe.mediadelivery.net/embed/${encodeURIComponent(lib)}/${encodeURIComponent(vid)}?autoplay=false&preload=true&responsive=true`;
+      if (BUNNY_TOKEN_KEY) { // short-lived signed URL so links can't be shared
+        const expires = Math.floor(Date.now() / 1000) + 3 * 3600;
+        const token = crypto.createHash('sha256').update(BUNNY_TOKEN_KEY + vid + expires).digest('hex');
+        src += `&token=${token}&expires=${expires}`;
+      }
+      return { type: 'iframe', src };
+    }
     if (/(^|\.)vimeo\.com$/.test(u.hostname)) return { type: 'iframe', src: `https://player.vimeo.com/video/${encodeURIComponent(u.pathname.split('/').filter(Boolean).pop())}` };
     return { type: 'video', src: u.href };
   } catch { return null; }
@@ -123,25 +139,31 @@ app.post('/api/auth/logout', (req, res) => { res.clearCookie(COOKIE, { path: '/'
 app.get('/api/me', (req, res) => res.json({ user: publicUser(req.user) || null, paymentMode: PAYMENT_MODE, razorpayKey: PAYMENT_MODE === 'razorpay' ? RZP_KEY : null }));
 
 // ---------- public catalogue ----------
-app.get('/api/exams', (req, res) => res.json(db.prepare('SELECT * FROM exams ORDER BY id').all()));
+app.get('/api/exams', (req, res) => res.json(db.prepare(`SELECT e.*, (SELECT COUNT(*) FROM courses c WHERE c.exam_id=e.id AND c.published=1) courses
+  FROM exams e ORDER BY e.position, e.id`).all()));
 app.get('/api/announcements', (req, res) => res.json(db.prepare('SELECT * FROM announcements ORDER BY id DESC LIMIT 10').all()));
 
 app.get('/api/courses', (req, res) => {
-  const exam = str(req.query.exam, 50), q = str(req.query.q, 100);
-  let sql = `SELECT c.id,c.title,c.description,c.language,c.price,c.mrp,c.thumbnail,e.slug exam_slug,e.name exam_name,
+  const exam = str(req.query.exam, 50), q = str(req.query.q, 100), board = str(req.query.board, 20), cls = str(req.query.class, 5), cat = str(req.query.category, 20);
+  let sql = `SELECT c.id,c.title,c.description,c.language,c.price,c.mrp,c.thumbnail,c.board,c.class_level,c.featured,e.slug exam_slug,e.name exam_name,e.name_mr exam_name_mr,e.icon exam_icon,e.category,
+    (SELECT COUNT(*) FROM enrollments x WHERE x.course_id=c.id) students,
     (SELECT COUNT(*) FROM lectures l WHERE l.course_id=c.id) lectures,
     (SELECT COUNT(*) FROM tests t WHERE t.course_id=c.id) tests,
     (SELECT COUNT(*) FROM materials m WHERE m.course_id=c.id) materials
     FROM courses c LEFT JOIN exams e ON e.id=c.exam_id WHERE c.published=1`;
   const p = [];
   if (exam) { sql += ' AND e.slug=?'; p.push(exam); }
-  if (q) { sql += ' AND (c.title LIKE ? OR c.description LIKE ?)'; p.push(`%${q}%`, `%${q}%`); }
-  res.json(db.prepare(sql + ' ORDER BY c.id DESC').all(...p));
+  if (q) { sql += ' AND (c.title LIKE ? OR c.description LIKE ? OR e.name LIKE ?)'; p.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (board && board !== 'All') { sql += " AND (c.board=? OR c.board='All')"; p.push(board); }
+  if (cls) { sql += ' AND c.class_level=?'; p.push(cls); }
+  if (cat) { sql += ' AND e.category=?'; p.push(cat); }
+  if (req.query.featured) sql += ' AND c.featured=1';
+  res.json(db.prepare(sql + ' ORDER BY c.featured DESC, c.id DESC LIMIT 100').all(...p));
 });
 
 app.get('/api/courses/:id', (req, res) => {
   const id = int(req.params.id);
-  const c = db.prepare('SELECT c.*, e.name exam_name, e.slug exam_slug FROM courses c LEFT JOIN exams e ON e.id=c.exam_id WHERE c.id=?').get(id);
+  const c = db.prepare('SELECT c.*, e.name exam_name, e.name_mr exam_name_mr, e.icon exam_icon, e.slug exam_slug FROM courses c LEFT JOIN exams e ON e.id=c.exam_id WHERE c.id=?').get(id);
   if (!c || (!c.published && req.user?.role !== 'admin')) return err(res, 404, 'Course not found');
   const enrolled = req.user?.role === 'admin' || isEnrolled(req.user?.id, id);
   const lectures = db.prepare('SELECT id,title,duration_min,is_preview,video_url FROM lectures WHERE course_id=? ORDER BY position,id').all(id)
@@ -149,7 +171,8 @@ app.get('/api/courses/:id', (req, res) => {
   const materials = db.prepare('SELECT id,title,is_preview FROM materials WHERE course_id=? ORDER BY id').all(id).map((m) => ({ ...m, locked: !(enrolled || m.is_preview) }));
   const tests = db.prepare('SELECT t.id,t.title,t.duration_min,t.is_preview,(SELECT COUNT(*) FROM questions q WHERE q.test_id=t.id) questions FROM tests t WHERE course_id=? ORDER BY id').all(id)
     .map((t) => ({ ...t, locked: !(enrolled || t.is_preview) }));
-  res.json({ course: c, enrolled, lectures, materials, tests });
+  const done = req.user ? db.prepare('SELECT lp.lecture_id FROM lecture_progress lp JOIN lectures l ON l.id=lp.lecture_id WHERE lp.user_id=? AND l.course_id=?').all(req.user.id, id).map((r) => r.lecture_id) : [];
+  res.json({ course: c, enrolled, lectures: lectures.map((l) => ({ ...l, done: done.includes(l.id) })), materials, tests });
 });
 
 // ---------- protected content ----------
@@ -157,7 +180,26 @@ app.get('/api/lectures/:id', auth, (req, res) => {
   const l = db.prepare('SELECT * FROM lectures WHERE id=?').get(int(req.params.id));
   if (!l) return err(res, 404, 'Not found');
   if (!canAccess(req, l.course_id, l.is_preview)) return err(res, 403, 'Buy this course to watch');
-  res.json({ id: l.id, title: l.title, course_id: l.course_id, player: embedUrl(l.video_url) });
+  const siblings = db.prepare('SELECT id,title FROM lectures WHERE course_id=? ORDER BY position,id').all(l.course_id);
+  const idx = siblings.findIndex((s) => s.id === l.id);
+  const done = !!db.prepare('SELECT 1 FROM lecture_progress WHERE user_id=? AND lecture_id=?').get(req.user.id, l.id);
+  res.json({ id: l.id, title: l.title, course_id: l.course_id, player: embedUrl(l.video_url), done, prev: siblings[idx - 1] || null, next: siblings[idx + 1] || null });
+});
+app.post('/api/lectures/:id/complete', auth, (req, res) => {
+  const l = db.prepare('SELECT * FROM lectures WHERE id=?').get(int(req.params.id));
+  if (!l || !canAccess(req, l.course_id, l.is_preview)) return err(res, 404, 'Not found');
+  if (req.body.done === false) db.prepare('DELETE FROM lecture_progress WHERE user_id=? AND lecture_id=?').run(req.user.id, l.id);
+  else db.prepare('INSERT OR IGNORE INTO lecture_progress (user_id,lecture_id) VALUES (?,?)').run(req.user.id, l.id);
+  res.json({ ok: true });
+});
+
+// Callback request / lead form (public)
+const leadLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
+app.post('/api/leads', leadLimiter, (req, res) => {
+  const phone = str(req.body.phone, 10);
+  if (!PHONE_RE.test(phone)) return err(res, 400, 'Enter a valid 10-digit mobile number');
+  db.prepare('INSERT INTO leads (name,phone,class_level,message) VALUES (?,?,?,?)').run(str(req.body.name, 100), phone, str(req.body.class_level, 10), str(req.body.message, 500));
+  res.json({ ok: true });
 });
 
 app.get('/api/materials/:id/download', auth, (req, res) => {
@@ -198,7 +240,10 @@ app.post('/api/tests/:id/submit', auth, (req, res) => {
 });
 
 app.get('/api/my/courses', auth, (req, res) => {
-  res.json(db.prepare(`SELECT c.id,c.title,c.language,e.name exam_name,en.expires_at FROM enrollments en JOIN courses c ON c.id=en.course_id
+  res.json(db.prepare(`SELECT c.id,c.title,c.language,e.name exam_name,e.icon exam_icon,en.expires_at,
+    (SELECT COUNT(*) FROM lectures l WHERE l.course_id=c.id) total,
+    (SELECT COUNT(*) FROM lecture_progress lp JOIN lectures l ON l.id=lp.lecture_id WHERE l.course_id=c.id AND lp.user_id=en.user_id) done
+    FROM enrollments en JOIN courses c ON c.id=en.course_id
     LEFT JOIN exams e ON e.id=c.exam_id WHERE en.user_id=? ORDER BY en.created_at DESC`).all(req.user.id));
 });
 app.get('/api/my/attempts', auth, (req, res) => {
@@ -288,20 +333,23 @@ A.get('/stats', (req, res) => {
     revenue: one("SELECT COALESCE(SUM(amount),0) v FROM orders WHERE status='paid'"),
     revenue30: one("SELECT COALESCE(SUM(amount),0) v FROM orders WHERE status='paid' AND created_at > datetime('now','-30 days')"),
     attempts: one('SELECT COUNT(*) v FROM attempts'),
+    leads: one("SELECT COUNT(*) v FROM leads WHERE created_at > datetime('now','-7 days')"),
+    signups: db.prepare("SELECT date(created_at) d, COUNT(*) n FROM users WHERE created_at > datetime('now','-14 days') GROUP BY d ORDER BY d").all(),
     topCourses: db.prepare("SELECT c.title, COUNT(o.id) sales, COALESCE(SUM(o.amount),0) revenue FROM courses c LEFT JOIN orders o ON o.course_id=c.id AND o.status='paid' GROUP BY c.id ORDER BY revenue DESC LIMIT 5").all(),
   });
 });
 
 A.get('/courses', (req, res) => res.json(db.prepare('SELECT c.*, e.name exam_name FROM courses c LEFT JOIN exams e ON e.id=c.exam_id ORDER BY c.id DESC').all()));
-const courseFields = (b) => [int(b.exam_id), str(b.title, 200), str(b.description), str(b.language, 50) || 'Marathi', Math.max(0, int(b.price) || 0), Math.max(0, int(b.mrp) || 0), Math.max(1, int(b.validity_days) || 365), str(b.thumbnail, 500) || null, bool(b.published)];
+const BOARDS = ['All', 'State', 'CBSE', 'ICSE'];
+const courseFields = (b) => [int(b.exam_id), str(b.title, 200), str(b.description), str(b.language, 50) || 'Marathi', Math.max(0, int(b.price) || 0), Math.max(0, int(b.mrp) || 0), Math.max(1, int(b.validity_days) || 365), str(b.thumbnail, 500) || null, bool(b.published), BOARDS.includes(b.board) ? b.board : 'All', str(b.class_level, 5) || null, bool(b.featured)];
 A.post('/courses', (req, res) => {
   const f = courseFields(req.body); if (!f[1]) return err(res, 400, 'Title required');
-  const r = db.prepare('INSERT INTO courses (exam_id,title,description,language,price,mrp,validity_days,thumbnail,published) VALUES (?,?,?,?,?,?,?,?,?)').run(...f);
+  const r = db.prepare('INSERT INTO courses (exam_id,title,description,language,price,mrp,validity_days,thumbnail,published,board,class_level,featured) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').run(...f);
   res.json({ id: Number(r.lastInsertRowid) });
 });
 A.put('/courses/:id', (req, res) => {
   const f = courseFields(req.body); if (!f[1]) return err(res, 400, 'Title required');
-  db.prepare('UPDATE courses SET exam_id=?,title=?,description=?,language=?,price=?,mrp=?,validity_days=?,thumbnail=?,published=? WHERE id=?').run(...f, int(req.params.id));
+  db.prepare('UPDATE courses SET exam_id=?,title=?,description=?,language=?,price=?,mrp=?,validity_days=?,thumbnail=?,published=?,board=?,class_level=?,featured=? WHERE id=?').run(...f, int(req.params.id));
   res.json({ ok: true });
 });
 A.delete('/courses/:id', (req, res) => {
@@ -391,6 +439,8 @@ A.post('/users/:id/revoke', (req, res) => { db.prepare('DELETE FROM enrollments 
 A.get('/orders', (req, res) => res.json(db.prepare(`SELECT o.*, u.name user_name, u.phone, c.title course_title FROM orders o
   JOIN users u ON u.id=o.user_id JOIN courses c ON c.id=o.course_id ORDER BY o.id DESC LIMIT 300`).all()));
 
+A.get('/leads', (req, res) => res.json(db.prepare('SELECT * FROM leads ORDER BY id DESC LIMIT 300').all()));
+A.delete('/leads/:id', (req, res) => { db.prepare('DELETE FROM leads WHERE id=?').run(int(req.params.id)); res.json({ ok: true }); });
 A.get('/coupons', (req, res) => res.json(db.prepare('SELECT * FROM coupons ORDER BY code').all()));
 A.post('/coupons', (req, res) => {
   const code = str(req.body.code, 30).toUpperCase(), pct = int(req.body.percent_off);
@@ -411,7 +461,10 @@ app.use('/api/admin', A);
 app.use('/api', (req, res) => err(res, 404, 'Not found'));
 
 // ---------- static SPA ----------
-app.use(express.static(path.join(__dirname, '..', 'public'), { index: 'index.html' }));
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  index: 'index.html',
+  setHeaders: (res, f) => { if (/(sw\.js|index\.html)$/.test(f)) res.setHeader('Cache-Control', 'no-cache'); },
+}));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
 app.use((e, req, res, next) => { console.error(e); err(res, 500, 'Something went wrong'); });
 

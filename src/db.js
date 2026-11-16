@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS exams (
   slug TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   name_mr TEXT,
+  category TEXT NOT NULL DEFAULT 'entrance',
+  icon TEXT,
+  position INTEGER NOT NULL DEFAULT 0,
   description TEXT
 );
 CREATE TABLE IF NOT EXISTS courses (
@@ -35,6 +38,9 @@ CREATE TABLE IF NOT EXISTS courses (
   title TEXT NOT NULL,
   description TEXT,
   language TEXT NOT NULL DEFAULT 'Marathi',
+  board TEXT NOT NULL DEFAULT 'All',
+  class_level TEXT,
+  featured INTEGER NOT NULL DEFAULT 0,
   price INTEGER NOT NULL DEFAULT 0,       -- in rupees
   mrp INTEGER NOT NULL DEFAULT 0,
   validity_days INTEGER NOT NULL DEFAULT 365,
@@ -110,6 +116,17 @@ CREATE TABLE IF NOT EXISTS attempts (
   answers TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS lecture_progress (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  lecture_id INTEGER NOT NULL REFERENCES lectures(id) ON DELETE CASCADE,
+  completed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, lecture_id)
+);
+CREATE TABLE IF NOT EXISTS leads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT, phone TEXT NOT NULL, class_level TEXT, message TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS announcements (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -118,16 +135,39 @@ CREATE TABLE IF NOT EXISTS announcements (
 );
 `);
 
+function addColumn(table, col, def) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+}
+addColumn('exams', 'category', "TEXT NOT NULL DEFAULT 'entrance'");
+addColumn('exams', 'icon', 'TEXT');
+addColumn('exams', 'position', 'INTEGER NOT NULL DEFAULT 0');
+addColumn('courses', 'board', "TEXT NOT NULL DEFAULT 'All'");
+addColumn('courses', 'class_level', 'TEXT');
+addColumn('courses', 'featured', 'INTEGER NOT NULL DEFAULT 0');
+
+// Exam catalogue. Upserted on every boot so new exams appear; admins can edit descriptions later.
+const EXAMS = [
+  // slug, name, name_mr, category, icon, description
+  ['jnvst-6', 'JNVST Class 6 (Navodaya)', 'नवोदय प्रवेश परीक्षा – इ. ६ वी', 'entrance', '🏫', 'For Class 5 students. 80 MCQs, 100 marks, 2 hours: Mental Ability 40 Q (50 marks), Arithmetic 20 Q (25), Language 20 Q (25). No negative marking. ~25 lakh applicants for ~47,000 seats.'],
+  ['jnvst-9', 'JNVST Class 9 (Navodaya)', 'नवोदय प्रवेश परीक्षा – इ. ९ वी', 'entrance', '🏫', 'Lateral entry for Class 8 students: English, Hindi, Mathematics and Science.'],
+  ['mh-scholarship-4', 'Maharashtra Scholarship – Class 4', 'शिष्यवृत्ती परीक्षा – इ. ४ थी', 'scholarship', '🏅', 'New from 2025-26 (replaces Class 5). MSCE Pune. Paper 1: First Language + Mathematics; Paper 2: Third Language (English) + Intelligence Test. Scholarship ₹5,000/year.'],
+  ['mh-scholarship-7', 'Maharashtra Scholarship – Class 7', 'शिष्यवृत्ती परीक्षा – इ. ७ वी', 'scholarship', '🏅', 'New from 2025-26 (replaces Class 8). MSCE Pune. Same two-paper pattern at upper-primary level. Scholarship ₹7,500/year.'],
+  ['mh-scholarship-5', 'Maharashtra Scholarship – Class 5 (PUP)', 'शिष्यवृत्ती परीक्षा – इ. ५ वी', 'scholarship', '🏅', 'Legacy pattern (last held Feb 2026, ~5.5 lakh appeared in 2025). Useful for previous-year papers.'],
+  ['mh-scholarship-8', 'Maharashtra Scholarship – Class 8 (PSS)', 'शिष्यवृत्ती परीक्षा – इ. ८ वी', 'scholarship', '🏅', 'Legacy pattern (last held Feb 2026, ~3.7 lakh appeared in 2025). Useful for previous-year papers.'],
+  ['nmms', 'NMMS (Class 8)', 'एन.एम.एम.एस. – इ. ८ वी', 'scholarship', '🎖️', 'National Means-cum-Merit Scholarship: MAT (90 Q) + SAT (90 Q). ₹12,000/year for Classes 9–12.'],
+  ['aissee', 'Sainik School (AISSEE)', 'सैनिक स्कूल प्रवेश परीक्षा', 'entrance', '🎯', 'NTA exam for Class 6 and 9 admission to Sainik Schools. 2 lakh+ candidates.'],
+  ['olympiad', 'Olympiads (SOF / NSO / IMO)', 'ऑलिम्पियाड', 'olympiad', '🧠', 'Science, Maths, English and Reasoning Olympiads for Classes 1–10.'],
+  ['mts-ntse', 'MTS / BDS / State Talent Search', 'एम.टी.एस. / प्रज्ञाशोध', 'olympiad', '💡', 'Popular Maharashtra talent-search exams for Classes 2–9.'],
+  ['ssc-board', 'Maharashtra State Board (SSC)', 'महाराष्ट्र राज्य मंडळ', 'school', '📗', 'Classes 1–10 state-board syllabus in Marathi & semi-English medium. ~16 lakh SSC candidates a year.'],
+  ['cbse', 'CBSE', 'सी.बी.एस.ई.', 'school', '📘', 'NCERT-based syllabus, Classes 1–12. ~25 lakh Class 10 candidates in 2026.'],
+  ['icse', 'ICSE / CISCE', 'आय.सी.एस.ई.', 'school', '📙', 'CISCE syllabus, Classes 1–10 (ICSE) and 11–12 (ISC).'],
+];
+
 function seed() {
-  const exams = db.prepare('SELECT COUNT(*) c FROM exams').get().c;
-  if (!exams) {
-    const ins = db.prepare('INSERT INTO exams (slug,name,name_mr,description) VALUES (?,?,?,?)');
-    ins.run('jnvst-6', 'JNVST Class 6 (Navodaya)', 'नवोदय प्रवेश परीक्षा इयत्ता ६', 'Jawahar Navodaya Vidyalaya Selection Test for Class 6: Mental Ability (40 Q), Arithmetic (20 Q), Language (20 Q) – 80 questions, 100 marks, 2 hours.');
-    ins.run('jnvst-9', 'JNVST Class 9 (Navodaya Lateral Entry)', 'नवोदय प्रवेश परीक्षा इयत्ता ९', 'Lateral entry test for Class 9: English, Hindi, Mathematics and Science.');
-    ins.run('mh-scholarship-5', 'Maharashtra Scholarship – Class 5 (PUP)', 'शिष्यवृत्ती परीक्षा इयत्ता ५ वी', 'Pre-Upper Primary Scholarship (MSCE Pune): Paper 1 – First Language & Mathematics, Paper 2 – Third Language (English) & Intelligence Test.');
-    ins.run('mh-scholarship-8', 'Maharashtra Scholarship – Class 8 (PSS)', 'शिष्यवृत्ती परीक्षा इयत्ता ८ वी', 'Pre-Secondary Scholarship (MSCE Pune): Paper 1 – First Language & Mathematics, Paper 2 – Third Language (English) & Intelligence Test.');
-    ins.run('nmms', 'NMMS (Class 8)', 'एन.एम.एम.एस.', 'National Means-cum-Merit Scholarship: MAT and SAT papers.');
-  }
+  const up = db.prepare(`INSERT INTO exams (slug,name,name_mr,category,icon,description,position) VALUES (?,?,?,?,?,?,?)
+    ON CONFLICT(slug) DO UPDATE SET category=excluded.category, icon=excluded.icon, position=excluded.position, name_mr=excluded.name_mr`);
+  EXAMS.forEach((e, i) => up.run(...e, i));
   const admins = db.prepare("SELECT COUNT(*) c FROM users WHERE role='admin'").get().c;
   if (!admins) {
     const phone = process.env.ADMIN_PHONE || '9999999999';
@@ -139,11 +179,13 @@ function seed() {
   const courses = db.prepare('SELECT COUNT(*) c FROM courses').get().c;
   if (!courses) {
     const jnv = db.prepare("SELECT id FROM exams WHERE slug='jnvst-6'").get().id;
-    const sch = db.prepare("SELECT id FROM exams WHERE slug='mh-scholarship-5'").get().id;
-    const ic = db.prepare('INSERT INTO courses (exam_id,title,description,language,price,mrp,published) VALUES (?,?,?,?,?,?,1)');
-    const c1 = ic.run(jnv, 'Navodaya Complete Batch 2027', 'Full JNVST Class 6 preparation: Mental Ability, Arithmetic and Language with 40+ video lectures, PDF notes and 10 full mock tests.', 'Marathi + Hindi', 1499, 2999).lastInsertRowid;
-    const c2 = ic.run(sch, 'Scholarship 5th Crash Course', 'Rapid revision for इयत्ता ५ वी शिष्यवृत्ती – Marathi, Maths, English and Buddhimatta with practice papers.', 'Marathi', 999, 1999).lastInsertRowid;
-    ic.run(jnv, 'Free Navodaya Demo Class', 'Try our teaching style for free.', 'Marathi', 0, 0);
+    const sch = db.prepare("SELECT id FROM exams WHERE slug='mh-scholarship-4'").get().id;
+    const cb = db.prepare("SELECT id FROM exams WHERE slug='cbse'").get().id;
+    const ic = db.prepare('INSERT INTO courses (exam_id,title,description,language,price,mrp,board,class_level,featured,published) VALUES (?,?,?,?,?,?,?,?,?,1)');
+    const c1 = ic.run(jnv, 'Navodaya Complete Batch 2027', 'Full JNVST Class 6 preparation: Mental Ability, Arithmetic and Language with 40+ video lectures, PDF notes and 10 full mock tests.', 'Marathi + Hindi', 1499, 2999, 'All', '5', 1).lastInsertRowid;
+    const c2 = ic.run(sch, 'Shishyavrutti 4th – Complete Course', 'इयत्ता ४ थी शिष्यवृत्ती (नवीन पॅटर्न) – Marathi, Maths, English and Buddhimatta with practice papers.', 'Marathi', 999, 1999, 'State', '4', 1).lastInsertRowid;
+    ic.run(jnv, 'Free Navodaya Demo Class', 'Try our teaching style for free.', 'Marathi', 0, 0, 'All', '5', 0);
+    ic.run(cb, 'CBSE Class 10 Maths – Full Year', 'Chapter-wise NCERT lectures, solved exemplar and sample papers.', 'English', 1999, 3999, 'CBSE', '10', 1);
     const il = db.prepare('INSERT INTO lectures (course_id,title,video_url,duration_min,is_preview,position) VALUES (?,?,?,?,?,?)');
     il.run(c1, 'Introduction to JNVST & exam pattern', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 12, 1, 1);
     il.run(c1, 'Mental Ability – Odd one out', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 35, 0, 2);
