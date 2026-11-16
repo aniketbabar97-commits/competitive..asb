@@ -22,12 +22,12 @@ const COLLECTIONS = {
   pages: { slug: 'slug', title: 'text', title_mr: 'text', body: 'text', body_mr: 'text', in_footer: 'bool' },
 };
 const SETTINGS = {
-  brand_name: 'Vidyarthi Path', brand_tagline: 'Navodaya, Scholarship & Board Exam Prep', logo_url: '',
-  primary_color: '#3b2fc9', accent_color: '#ff9f1c',
-  hero_pill_en: '🎉 Scholarship 2027 batches now open', hero_pill_mr: '🎉 शिष्यवृत्ती २०२७ बॅच सुरू',
-  hero_title_en: 'Crack <em>Navodaya</em>, <em>Scholarship</em> & Board exams', hero_title_mr: '<em>नवोदय</em>, <em>शिष्यवृत्ती</em> आणि बोर्ड परीक्षेत यश मिळवा',
-  hero_lead_en: 'Video lectures, notes and mock tests by expert teachers, in Marathi and English. Made for Classes 1–12 across State Board, CBSE and ICSE.',
-  hero_lead_mr: 'तज्ञ शिक्षकांची व्हिडिओ लेक्चर्स, नोट्स आणि सराव चाचण्या – मराठी व इंग्रजीत. इयत्ता १ ते १२ – राज्य मंडळ, CBSE व ICSE.',
+  brand_name: 'SchoolPariksha', brand_tagline: 'Navodaya, Scholarship & School Exam Preparation', logo_url: '',
+  primary_color: '#1d3c78', accent_color: '#f2a007',
+  hero_pill_en: 'Scholarship 4th & 7th · 2027 batch now open', hero_pill_mr: 'शिष्यवृत्ती ४ थी व ७ वी · २०२७ बॅच सुरू',
+  hero_title_en: 'Exam preparation that speaks <em>your language</em>', hero_title_mr: 'तुमच्या भाषेत, <em>परीक्षेची</em> खरी तयारी',
+  hero_lead_en: 'Navodaya, Maharashtra Scholarship, NMMS, Sainik School and Classes 1–12 for State Board, CBSE and ICSE. Short video lessons, printable notes and timed mock tests with a state-wide rank.',
+  hero_lead_mr: 'नवोदय, शिष्यवृत्ती, NMMS, सैनिक स्कूल आणि इयत्ता १ ते १२ – राज्य मंडळ, CBSE व ICSE. छोटे व्हिडिओ धडे, नोट्स आणि राज्यस्तरीय रँकसह वेळबद्ध सराव चाचण्या.',
   footer_about_en: 'Affordable, high-quality exam preparation for every student in Maharashtra, in their own language.',
   footer_about_mr: 'महाराष्ट्रातील प्रत्येक विद्यार्थ्यासाठी त्याच्या भाषेत परवडणारी, दर्जेदार परीक्षा तयारी.',
   contact_phone: '', contact_whatsapp: '', contact_email: '', contact_address: '',
@@ -111,7 +111,7 @@ function mount(app, { auth, admin, err, IMAGE_DIR }) {
     const s = getSettings();
     res.type('application/manifest+json').json({
       name: s.brand_name, short_name: s.brand_name.slice(0, 12), description: s.brand_tagline, start_url: '/#/', scope: '/', display: 'standalone',
-      orientation: 'portrait', background_color: '#f6f7fb', theme_color: HEX.test(s.primary_color) ? s.primary_color : '#3b2fc9', lang: 'mr-IN',
+      orientation: 'portrait', background_color: '#f6f7fb', theme_color: HEX.test(s.primary_color) ? s.primary_color : '#1d3c78', lang: 'mr-IN',
       icons: [{ src: s.logo_url && s.logo_url.startsWith('/media/') ? s.logo_url : '/icon.svg', sizes: 'any', type: s.logo_url && s.logo_url.startsWith('/media/') ? undefined : 'image/svg+xml', purpose: 'any maskable' }],
     });
   });

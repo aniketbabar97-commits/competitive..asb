@@ -1,5 +1,5 @@
 {
-  "name": "vidyarthi-path",
+  "name": "schoolpariksha",
   "version": "0.1.0",
   "description": "Ed-tech platform for JNVST (Navodaya) and Maharashtra Scholarship exam preparation",
   "main": "src/server.js",

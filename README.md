@@ -1,4 +1,4 @@
-# Vidyarthi Path 📘
+# SchoolPariksha 📘
 
 A bilingual (**मराठी / English**) learning platform for **Navodaya (JNVST)**, **Maharashtra Scholarship (Class 4 & 7)**, **NMMS**, **Sainik School**, **Olympiads**, and **State Board / CBSE / ICSE** Classes 1–12. It sells video lectures, PDF notes and timed mock tests, works as an installable app (PWA), and has a full admin panel.
 

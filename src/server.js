@@ -147,7 +147,7 @@ app.get('/api/announcements', (req, res) => res.json(db.prepare('SELECT * FROM a
 
 app.get('/api/courses', (req, res) => {
   const exam = str(req.query.exam, 50), q = str(req.query.q, 100), board = str(req.query.board, 20), cls = str(req.query.class, 5), cat = str(req.query.category, 20);
-  let sql = `SELECT c.id,c.title,c.description,c.language,c.price,c.mrp,c.thumbnail,c.board,c.class_level,c.featured,e.slug exam_slug,e.name exam_name,e.name_mr exam_name_mr,e.icon exam_icon,e.category,
+  let sql = `SELECT c.id,c.title,c.description,c.language,c.price,c.mrp,c.thumbnail,c.board,c.class_level,c.featured,e.slug exam_slug,e.name exam_name,e.name_mr exam_name_mr,e.icon exam_icon,e.short exam_short,e.position exam_pos,e.category,
     (SELECT COUNT(*) FROM enrollments x WHERE x.course_id=c.id) students,
     (SELECT COUNT(*) FROM lectures l WHERE l.course_id=c.id) lectures,
     (SELECT COUNT(*) FROM tests t WHERE t.course_id=c.id) tests,
@@ -165,7 +165,7 @@ app.get('/api/courses', (req, res) => {
 
 app.get('/api/courses/:id', (req, res) => {
   const id = int(req.params.id);
-  const c = db.prepare('SELECT c.*, e.name exam_name, e.name_mr exam_name_mr, e.icon exam_icon, e.slug exam_slug FROM courses c LEFT JOIN exams e ON e.id=c.exam_id WHERE c.id=?').get(id);
+  const c = db.prepare('SELECT c.*, e.name exam_name, e.name_mr exam_name_mr, e.icon exam_icon, e.short exam_short, e.position exam_pos, e.category, e.slug exam_slug FROM courses c LEFT JOIN exams e ON e.id=c.exam_id WHERE c.id=?').get(id);
   if (!c || (!c.published && req.user?.role !== 'admin')) return err(res, 404, 'Course not found');
   const enrolled = req.user?.role === 'admin' || isEnrolled(req.user?.id, id);
   const lectures = db.prepare('SELECT id,title,duration_min,is_preview,video_url FROM lectures WHERE course_id=? ORDER BY position,id').all(id)
@@ -242,7 +242,7 @@ app.post('/api/tests/:id/submit', auth, (req, res) => {
 });
 
 app.get('/api/my/courses', auth, (req, res) => {
-  res.json(db.prepare(`SELECT c.id,c.title,c.language,e.name exam_name,e.icon exam_icon,en.expires_at,
+  res.json(db.prepare(`SELECT c.id,c.title,c.language,c.thumbnail,e.name exam_name,e.name_mr exam_name_mr,e.icon exam_icon,e.short exam_short,e.position exam_pos,e.slug exam_slug,en.expires_at,
     (SELECT COUNT(*) FROM lectures l WHERE l.course_id=c.id) total,
     (SELECT COUNT(*) FROM lecture_progress lp JOIN lectures l ON l.id=lp.lecture_id WHERE l.course_id=c.id AND lp.user_id=en.user_id) done
     FROM enrollments en JOIN courses c ON c.id=en.course_id
@@ -471,5 +471,5 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
 app.use((e, req, res, next) => { console.error(e); err(res, 500, 'Something went wrong'); });
 
-if (require.main === module) app.listen(PORT, () => console.log(`Vidyarthi Path running on http://localhost:${PORT} (payments: ${PAYMENT_MODE})`));
+if (require.main === module) app.listen(PORT, () => console.log(`SchoolPariksha running on http://localhost:${PORT} (payments: ${PAYMENT_MODE})`));
 module.exports = app;

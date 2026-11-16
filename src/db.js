@@ -144,6 +144,7 @@ addColumn('exams', 'icon', 'TEXT');
 addColumn('exams', 'position', 'INTEGER NOT NULL DEFAULT 0');
 addColumn('courses', 'board', "TEXT NOT NULL DEFAULT 'All'");
 addColumn('courses', 'class_level', 'TEXT');
+addColumn('exams', 'short', 'TEXT');
 addColumn('courses', 'featured', 'INTEGER NOT NULL DEFAULT 0');
 
 // Exam catalogue. Upserted on every boot so new exams appear; admins can edit descriptions later.
@@ -166,8 +167,11 @@ const EXAMS = [
 
 function seed() {
   const up = db.prepare(`INSERT INTO exams (slug,name,name_mr,category,icon,description,position) VALUES (?,?,?,?,?,?,?)
-    ON CONFLICT(slug) DO UPDATE SET category=excluded.category, icon=excluded.icon, position=excluded.position, name_mr=excluded.name_mr`);
+    ON CONFLICT(slug) DO UPDATE SET category=excluded.category, position=excluded.position, name_mr=excluded.name_mr`);
   EXAMS.forEach((e, i) => up.run(...e, i));
+  const SHORT = { 'jnvst-6': 'JNVST · 6', 'jnvst-9': 'JNVST · 9', 'mh-scholarship-4': 'Scholarship · 4', 'mh-scholarship-7': 'Scholarship · 7', 'mh-scholarship-5': 'Scholarship · 5', 'mh-scholarship-8': 'Scholarship · 8', nmms: 'NMMS', aissee: 'AISSEE', olympiad: 'Olympiad', 'mts-ntse': 'MTS · BDS', 'ssc-board': 'State Board', cbse: 'CBSE', icse: 'ICSE' };
+  const us = db.prepare('UPDATE exams SET short=? WHERE slug=? AND short IS NULL');
+  for (const [k, v] of Object.entries(SHORT)) us.run(v, k);
   const admins = db.prepare("SELECT COUNT(*) c FROM users WHERE role='admin'").get().c;
   if (!admins) {
     const phone = process.env.ADMIN_PHONE || '9999999999';
